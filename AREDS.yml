@@ -1,15 +1,14 @@
 ---
-- etl:
-    separator: ';'
-    enumname:  'CODE_MEANING'
-    typename: 'TYPE'
-    varname: 'VARNAME'
-    patientid: 'ID2' #patientid
-    basedate: '1/1/2000'
-    dateformat: '4' # visitdateformat
-    datevar: 'OBSTIME' #diffdatevarname
-    additionaldatediffvarname: 'ADVTIME'
-    additionaldatedifftimeunits: '2'
-    pathroot: 'dbGaP/AREDS/Adverse Events' #pathrootname
-    filebase: 'adverse'
+separator: ';'
+enumname:  'CODE_MEANING'
+typename: 'TYPE'
+varname: 'VARNAME'
+patientid: 'ID2' #patientid
+basedate: '1/1/2000'
+dateformat: '4' # visitdateformat
+datevar: 'OBSTIME' #diffdatevarname
+additionaldatediffvarname: 'ADVTIME'
+additionaldatedifftimeunits: '2'
+pathroot: 'dbGaP/AREDS/Adverse Events' #pathrootname
+filebase: 'adverse'
 ...
