@@ -2,6 +2,7 @@
 import argparse
 import yaml
 import sys
+import re
 import datetime
 from datetime import timedelta
 import csv
@@ -91,7 +92,7 @@ class ETLdbGap:
 
     
     def read_facts(self,phenocsvfile):
-        with open(phenocsvfile, 'r') as f:
+        with open(phenocsvfile, 'r',encoding='utf-8-sig') as f:
             reader = csv.reader(f)
             self._data = list(reader)
         i = 0
@@ -184,11 +185,80 @@ class ETLdbGap:
             for row in facts:
                 writer.writerow(row)
 
+
+    def write_fundus_facts(self,factsfile):
+        mrn = ""	
+        startdate = datetime.datetime.now()	
+        code = ""
+        value = ""
+
+    # Collect facts for facts.csv
+        facts = []
+        datecolignore = -1
+        code = ""
+        value = ""
+        dt_string = ""
+        righteyedate = self.config['rightdate']
+        righteyere = r'\b(?:RE\w+|\w+RE)\b'
+        lefteyedate = self.config['leftdate']
+        lefteyere = r'\b(?:LE\w+|\w+LE)\b'
+        visitdateformat = int(self.config['dateformat'])
+        visitbaselinedate = self.config['basedate']
+        for i in range(len(self._data)):
+            if i > 0:
+                # Patient ID
+                mrn =  self._data[i][self._variables[self.config['patientid']]]
+
+                beginDate = datetime.datetime.strptime(visitbaselinedate, "%d/%m/%Y")
+                righttimediff=float(self._data[i][self._variables[righteyedate]])
+                lefttimediff=float(self._data[i][self._variables[lefteyedate]])
+                rightstartdate = beginDate  + datetime.timedelta(days=int(righttimediff * 365) )
+                leftstartdate = beginDate  + datetime.timedelta(days=int(lefttimediff * 365) )
+                laststartdate = max(rightstartdate,leftstartdate)
+
+                # Loop through cells in row
+                for j, value in enumerate(self._data[i]):
+                    if j == self._variables[self.config['patientid']] or j == self._variables[righteyedate] or j == self._variables[lefteyedate]:
+                        continue
+                    else:
+                        if self._data [i][j].strip() == "" :
+                            continue
+                    
+                        code = "-"
+                        for x in range(len(self._map_phenotype_to_concept)):
+                            if x > 0 :
+                            # Check if it is an enumerated value, then only add code
+                                if self._map_phenotype_to_concept[x][3] == value and self._map_phenotype_to_concept[x][4] == self._data[0][j] :
+                                    code = self._map_phenotype_to_concept[x][1]
+                                    value = ""
+    
+                        if code =="-" :
+                            code = self._data[0][j]
+                            value = self._data [i][j]
+                        if re.search(righteyere, self._data[0][j]):
+                            dt_string = rightstartdate.strftime("%Y-%m-%d")
+                        elif re.search(lefteyere, self._data[0][j]):
+                            dt_string = leftstartdate.strftime("%Y-%m-%d")
+                        else:
+                            dt_string = laststartdate.strftime("%Y-%m-%d")
+                          
+                        facts.append((mrn,str(dt_string), code, value))
+                        #print (mrn + ", " + str(dt_string) + ", " + str(code) + ", " + str (value) )
+         
+    # Write facts file
+    
+        #factsfile = 'facts_' + self.config['filebase'] + '.csv'
+        with open(factsfile, 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(['mrn', 'start-date', 'code', 'value'])
+            for row in facts:
+                writer.writerow(row)
+
     def write_facts(self,factsfile):
         if self.config['filebase'] == 'adverse':
             self.write_adverse_facts(factsfile)
         elif self.config['filebase'] == 'fundus':
-            self.write_fundus_facts(filebase)
+            self.write_fundus_facts(factsfile)
 
 #
 # Command-line arguments. Could add dictionary and input to config, but
@@ -222,14 +292,11 @@ def main():
     etl_conf = load_conf(inputs.config)
     etl = ETLdbGap(etl_conf)
     etl.read_data_dictionary(inputs.dictionary)
-    print(etl_conf)
     conceptsfile = 'concepts_' + etl_conf['filebase'] + '.csv'
     etl.write_concepts(conceptsfile)
     etl.read_facts(inputs.input)
     factsfile = 'facts_' + etl_conf['filebase'] + '.csv'
     etl.write_facts(factsfile)
-#    map2concepts = etl_concepts(etl_conf,dd)
-#    etl_facts(etl_conf,map2concepts,inputs.input)
 
 if __name__ == '__main__':
     main()
