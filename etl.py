@@ -223,7 +223,7 @@ class ETLdbGap:
                     if j == self._variables[self.config['patientid']] or j == self._variables[righteyedate] or j == self._variables[lefteyedate]:
                         continue
                     else:
-                        if self._data [i][j].strip() == "" :
+                        if self._data[i][j].strip() == "" :
                             continue
                     
                         code = "-"
@@ -256,11 +256,69 @@ class ETLdbGap:
             for row in facts:
                 writer.writerow(row)
 
+    def write_mortality_facts(self,factsfile):
+        mrn = ""	
+        startdate = datetime.datetime.now()	
+        code = ""
+        value = ""
+
+    # Collect facts for facts.csv
+        facts = []
+        datecolignore = -1
+        code = ""
+        value = ""
+        dt_string = ""
+        visitdatevarname = self.config['datevar']
+        visitdateformat = int(self.config['dateformat'])
+        visitbaselinedate = self.config['basedate']
+        for i in range(len(self._data)):
+            if i > 0:
+                # Patient ID
+                mrn =  self._data[i][self._variables[self.config['patientid']]]
+                # Visit Date
+                timediff=float(self._data[i][self._variables[visitdatevarname]])
+                beginDate = datetime.datetime.strptime(visitbaselinedate, "%d/%m/%Y")
+                startdate = beginDate  + datetime.timedelta(days=int(timediff * 365) )
+                dt_string = startdate.strftime("%Y-%m-%d")
+                # Loop through cells in row
+                for j, value in enumerate(self._data[i]):
+                    if j == self._variables[self.config['patientid']] or j == self._variables[self.config['datevar']]:
+                        continue
+                    else:
+                        if self._data [i][j].strip() == "" :
+                            continue
+                    
+                        code = "-"
+                        for x in range(len(self._map_phenotype_to_concept)):
+                            if x > 0 :
+                            # Check if it is an enumerated value, then only add code
+                                if self._map_phenotype_to_concept[x][3] == value and self._map_phenotype_to_concept[x][4] == self._data[0][j] :
+                                    code = self._map_phenotype_to_concept[x][1]
+                                    value = ""
+    
+                        if code =="-" :
+                            code = self._data[0][j]
+                            value = self._data [i][j]
+                        facts.append((mrn,str(dt_string), code, value))
+                        #print (mrn + ", " + str(dt_string) + ", " + str(code) + ", " + str (value) )
+         
+    # Write facts file
+    
+        #factsfile = 'facts_' + self.config['filebase'] + '.csv'
+        with open(factsfile, 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(['mrn', 'start-date', 'code', 'value'])
+            for row in facts:
+                writer.writerow(row)
+
+
     def write_facts(self,factsfile):
         if self.config['filebase'] == 'adverse':
             self.write_adverse_facts(factsfile)
         elif self.config['filebase'] == 'fundus':
             self.write_fundus_facts(factsfile)
+        elif self.config['filebase'] == 'mortality':
+            self.write_mortality_facts(factsfile)
 
 #
 # Command-line arguments. Could add dictionary and input to config, but

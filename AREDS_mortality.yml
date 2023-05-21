@@ -1,0 +1,12 @@
+---
+separator: ';'
+enumname:  'CODE_MEANING'
+typename: 'TYPE'
+varname: 'VARNAME'
+patientid: 'ID2' #patientid
+basedate: '1/1/2000'
+dateformat: '4' 
+datevar: 'DEATHTIME' #diffdatevarname
+pathroot: 'dbGaP/AREDS/Mortality Events' #pathrootname
+filebase: 'mortality'
+...
