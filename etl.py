@@ -45,7 +45,7 @@ class ETLdbGap:
             if varname == self.config['patientid']:
                 continue
             vartype = row[self.config['typename']]
-            values = row[self.config['enumname']].split(self.config['separator'])
+            values = re.split(self.config['separator'],row[self.config['enumname']])
             path = "/".join(['',self.config['pathroot'],varname,''])
             # Check what i2b2 type of variable it is: integer, float, string or large-string
             if len(values) == 1:
@@ -61,29 +61,31 @@ class ETLdbGap:
                 conceptpath = path
                 split_data.append((conceptpath, i2b2code,i2b2vartype))
                 self._map_phenotype_to_concept.append((conceptpath, i2b2code,i2b2vartype, dbgap_code_id, varname))
-            for i, value in enumerate(values):
-                value.replace('"','')      
-                # Limit the split to 1 as some descriptions contain "="
-                clin_name= value.strip().split('=',1)
-                dbgap_code_id = ''
-                i2b2conceptlabel=''
-                i2b2concept=''
-                if len(clin_name) > 1:
-                    dbgap_code_id = clin_name[0].replace('"','').lstrip()
-                    i2b2concept = clin_name[1].replace('"','') 
-                    i2b2concept = i2b2concept.replace(',',' or ') 
-                    i2b2conceptlabel= ''.join(filter(str.isalnum, i2b2concept))
-                if (i2b2conceptlabel == dbgap_code_id): # TODO: Ensure i2b2code is unique in the ontology
-                    i2b2code = varname + ''.join(filter(str.isalnum, i2b2concept))   
-                else:   
-                    i2b2code= varname + ''.join(filter(str.isalnum, i2b2concept)) + dbgap_code_id        
-                if len(i2b2code)>50: # Ensure i2b2code is no longer than 50 characters, max : 50, can be any length
-                    leftposition=len(i2b2code)-50
-                    i2b2code=i2b2code[leftposition:]
-                conceptpath = path + i2b2concept
-                split_data.append((conceptpath, i2b2code,"assertion"))
-                self._map_phenotype_to_concept.append((conceptpath, i2b2code,"assertion", dbgap_code_id, varname))
-        #conceptsfile = 'concepts_' + self.config['filebase'] + '.csv'
+            else: 
+                for i, value in enumerate(values):
+                    value.replace('"','')      
+                    # Limit the split to 1 as some descriptions contain "="
+                    clin_name = value.split('=',1)
+                    # Remove spaces
+                    clin_name = [x.strip(' ') for x in clin_name]
+                    dbgap_code_id = ''
+                    i2b2conceptlabel=''
+                    i2b2concept=''
+                    if len(clin_name) > 1:
+                        dbgap_code_id = clin_name[0].replace('"','').lstrip()
+                        i2b2concept = clin_name[1].replace('"','') 
+                        i2b2concept = i2b2concept.replace(',',' or ') 
+                        i2b2conceptlabel= ''.join(filter(str.isalnum, i2b2concept))
+                    if (i2b2conceptlabel == dbgap_code_id): # TODO: Ensure i2b2code is unique in the ontology
+                        i2b2code = varname + ''.join(filter(str.isalnum, i2b2concept))   
+                    else:   
+                        i2b2code= varname + ''.join(filter(str.isalnum, i2b2concept)) + dbgap_code_id        
+                    if len(i2b2code)>50: # Ensure i2b2code is no longer than 50 characters, max : 50, can be any length
+                        leftposition=len(i2b2code)-50
+                        i2b2code=i2b2code[leftposition:]
+                    conceptpath = path + i2b2concept
+                    split_data.append((conceptpath, i2b2code,"assertion"))
+                    self._map_phenotype_to_concept.append((conceptpath, i2b2code,"assertion", dbgap_code_id, varname))
         with open(conceptsfile, 'w', newline='') as f:
             writer = csv.writer(f)
             writer.writerow(['path','code','type'])

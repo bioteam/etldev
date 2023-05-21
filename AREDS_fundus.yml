@@ -1,5 +1,5 @@
 ---
-separator: ';'
+separator: '(?<!D);'
 enumname:  'CODE_MEANING'
 typename: 'TYPE'
 varname: 'VARNAME'
