@@ -77,11 +77,14 @@ class ETLdbGap:
                         i2b2concept = i2b2concept.replace(',',' or ') 
                         i2b2conceptlabel= ''.join(filter(str.isalnum, i2b2concept))
                     if (i2b2conceptlabel == dbgap_code_id): # TODO: Ensure i2b2code is unique in the ontology
-                        i2b2code = varname + ''.join(filter(str.isalnum, i2b2concept))   
+                        varcode = ''.join(filter(str.isalnum, i2b2concept))
                     else:   
-                        i2b2code= varname + ''.join(filter(str.isalnum, i2b2concept)) + dbgap_code_id        
-                    if len(i2b2code)>50: # Ensure i2b2code is no longer than 50 characters, max : 50, can be any length
-                        i2b2code = i2b2code[:50]
+                        varcode = ''.join(filter(str.isalnum, i2b2concept)) + dbgap_code_id        
+                    if (len(varname) + len(varcode)) > 50:
+                        truncate = 50 - len(varname)
+                        i2b2code = varname + varcode[-truncate:]
+                    else:
+                        i2b2code = varname + varcode
                     conceptpath = path + i2b2concept
                     split_data.append((conceptpath, i2b2code,"assertion"))
                     self._map_phenotype_to_concept.append((conceptpath, i2b2code,"assertion", dbgap_code_id, varname))
