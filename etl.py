@@ -81,8 +81,7 @@ class ETLdbGap:
                     else:   
                         i2b2code= varname + ''.join(filter(str.isalnum, i2b2concept)) + dbgap_code_id        
                     if len(i2b2code)>50: # Ensure i2b2code is no longer than 50 characters, max : 50, can be any length
-                        leftposition=len(i2b2code)-50
-                        i2b2code=i2b2code[leftposition:]
+                        i2b2code = i2b2code[:50]
                     conceptpath = path + i2b2concept
                     split_data.append((conceptpath, i2b2code,"assertion"))
                     self._map_phenotype_to_concept.append((conceptpath, i2b2code,"assertion", dbgap_code_id, varname))
