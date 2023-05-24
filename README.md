@@ -11,8 +11,7 @@ Run with 3 arguments: Configuration file ( "-c", "--config"), input file ("-i", 
 * varname &emsp;# Column name in data dictionary with variable names for the ontology   
 * patientid &emsp;# Patient id name in data dictionary file  
 * basedate &emsp;# The baseline or enrollment date for a clinical trial participation  
-* dateformat &emsp;# Options: 1=date, 2=days from baseline, 3= months from baseline, 4= years from baseline  
-* datevar &emsp;# If visitdateformat not 1 : variable name containing the difference in date for the visit  
+* dateformat &emsp;# Options: 0=no date - use basedate, 1=date, 2=days from baseline, 3= months from baseline, 4= years from baseline  * datevar &emsp;# If visitdateformat not 1 : variable name containing the difference in date for the visit  
 * pathroot &emsp;# Name of the ontology root for concepts.csv  
 * filebase &emsp;# Name for output files usually correlating with study name  
   
