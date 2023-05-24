@@ -1,0 +1,14 @@
+---
+separator: ','
+enumname:  'Label'
+typename: 'Type'
+varname: 'Variable'
+patientid: 'MaskID' 
+basedate: '1/1/2000' #randomization date
+dateformat: '0' # visitdateformat
+datevar: '' #diffdatevarname
+additionaldatediffvarname: 'NA'
+additionaldatedifftimeunits: '0'
+pathroot: 'dbGaP/ACCORD/Key' #pathrootname
+filebase: 'accord_key'
+...
