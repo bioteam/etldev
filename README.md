@@ -1,7 +1,7 @@
 # etldev
 
 `etl.py` transforms dbGaP data to the i2b2 data format.   
-Run with 3 arguments: Configuration file ( "-c", "--config"), input file ("-i", "--input"), and data dictionary ("-d", "--dictionary") file 
+Run with 3 arguments: Configuration file ( "-c", "--config"), input file ("-i", "--input"), and data dictionary file ("-d", "--dictionary") 
 
 # Basic YML Configuration file:
 
