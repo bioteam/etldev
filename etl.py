@@ -411,7 +411,7 @@ class ETLdbGap:
             if i > 0:
                 # Patient ID
                 mrn = self._data[i][self._variables[self.config["patientid"]]]
-                # print ("patient"+str(mrn))
+                # print("patient " + str(mrn))
                 # Visit Date
                 if visitdateformat == 1:  # Use date from column visitdatevarname
                     startdate = self._data[i][self._variables[visitdatevarname]]
@@ -457,15 +457,14 @@ class ETLdbGap:
 
                         code = "-"
                         for x in range(len(self._map_phenotype_to_concept)):
-                            if x > 0:
-                                # Check if it is an enumerated value, then only add code
-                                if (
-                                    self._map_phenotype_to_concept[x][3] == value
-                                    and self._map_phenotype_to_concept[x][4]
-                                    == self._data[0][j]
-                                ):
-                                    code = self._map_phenotype_to_concept[x][1]
-                                    value = ""
+                            # Check if it is an enumerated value, then only add code
+                            if (
+                                self._map_phenotype_to_concept[x][3] == value
+                                and self._map_phenotype_to_concept[x][4]
+                                == self._data[0][j]
+                            ):
+                                code = self._map_phenotype_to_concept[x][1]
+                                value = ""
 
                         if code == "-":
                             code = self._data[0][j]
