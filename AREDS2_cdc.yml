@@ -1,0 +1,13 @@
+---
+dictformat: 'areds2'
+separator: ','
+enumname:  'VALUES'
+typename: 'TYPE'
+varname: 'VARNAME'
+patientid: 'SUBJECT_ID' #patientid
+basedate: '1/1/2000'
+dateformat: '2' # Already converted to days
+datevar: 'ANALDATE' #diffdatevarname
+pathroot: 'dbGaP/AREDS2/CDC Events' #pathrootname
+filebase: 'cdc'
+...

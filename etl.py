@@ -10,8 +10,12 @@ import csv
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-c", "--config", help="ETL config file", default="etl.yml")
-    parser.add_argument("-d", "--dictionary", help="file containing data dictionary")
+    parser.add_argument(
+        "-c", "--config", help="ETL config file", default="etl.yml"
+    )
+    parser.add_argument(
+        "-d", "--dictionary", help="file containing data dictionary"
+    )
     parser.add_argument("-i", "--input", help="file data to be ETL'd")
     args = parser.parse_args()
     return args
@@ -26,6 +30,21 @@ class ETLdbGap:
         self._variables = {}
 
     def read_data_dictionary(self, dictfile):
+        try:
+            self.config["dictformat"]
+        except KeyError:
+            format = "areds"  # This is the default
+        else:
+            format = self.config["dictformat"]
+        if format == "areds2":
+            self.read_areds2_data_dictionary(dictfile)
+        else:
+            self.read_areds_data_dictionary(dictfile)
+
+    #
+    # The AREDS dictionaries may have leading comment lines
+    #
+    def read_areds_data_dictionary(self, dictfile):
         with open(dictfile, encoding="latin-1") as csvfile:
             ptr = csvfile.tell()
             line = csvfile.readline()
@@ -40,6 +59,27 @@ class ETLdbGap:
                 if list(row.values())[0]:
                     self._data_dictionary.append(row)
 
+    #
+    # The AREDS2 dictionaries have enumerated values separated by commas
+    #
+    def read_areds2_data_dictionary(self, dictfile):
+        with open(dictfile) as csvfile:
+            ptr = csvfile.tell()
+            #
+            # Read headers explicitly and let DictReader make a list of
+            # the enumerated values
+            #
+            line = csvfile.readline()
+            names = line.split(sep=",")[:16]
+
+            reader = csv.DictReader(
+                csvfile, fieldnames=names, restkey="VALUES"
+            )
+            for row in reader:
+                # Skip empty lines
+                if list(row.values())[0]:
+                    self._data_dictionary.append(row)
+
     def write_concepts(self, conceptsfile):
         split_data = []
         for row in self._data_dictionary:
@@ -47,14 +87,24 @@ class ETLdbGap:
             if varname == self.config["patientid"]:
                 continue
             vartype = row[self.config["typename"]]
-            values = re.split(self.config["separator"], row[self.config["enumname"]])
+            if type(row[self.config["enumname"]]) is list:
+                if vartype == "encoded value":
+                    values = list(filter(len, row[self.config["enumname"]]))
+                else:
+                    values = row[self.config["enumname"]][0]
+            else:
+                values = re.split(
+                    self.config["separator"], row[self.config["enumname"]]
+                )
             path = "/".join(["", self.config["pathroot"], varname, ""])
             # Check what i2b2 type of variable it is: integer, float,
             # string or large-string
-            if len(values) == 1:
+            if len(values) <= 1:
                 if vartype.lower() == "num" or vartype.lower() == "integer":
                     i2b2vartype = "integer"
-                elif vartype.lower() == "decimal" or vartype.lower() == "float":
+                elif (
+                    vartype.lower() == "decimal" or vartype.lower() == "float"
+                ):
                     i2b2vartype = "float"
                 else:
                     i2b2vartype = "string"
@@ -86,18 +136,21 @@ class ETLdbGap:
                         dbgap_code_id = clin_name[0].replace('"', "").lstrip()
                         i2b2concept = clin_name[1].replace('"', "")
                         i2b2concept = i2b2concept.replace(",", " or ")
-                        i2b2conceptlabel = "".join(filter(str.isalnum, i2b2concept))
+                        i2b2conceptlabel = "".join(
+                            filter(str.isalnum, i2b2concept)
+                        )
                     if (
                         i2b2conceptlabel == dbgap_code_id
                     ):  # TODO: Ensure i2b2code is unique in the ontology
                         varcode = "".join(filter(str.isalnum, i2b2concept))
                     else:
                         varcode = (
-                            "".join(filter(str.isalnum, i2b2concept)) + dbgap_code_id
+                            "".join(filter(str.isalnum, i2b2concept))
+                            + dbgap_code_id
                         )
                     varname4i2b2 = "".join(varname.split())
                     if (len(varname4i2b2) + len(varcode)) > 50:
-                        truncate = 50 - len(vavarname4i2b2rname)
+                        truncate = 50 - len(varname4i2b2)
                         i2b2code = varname4i2b2 + varcode[-truncate:]
                     else:
                         i2b2code = varname4i2b2 + varcode
@@ -143,19 +196,27 @@ class ETLdbGap:
         visitdateformat = int(self.config["dateformat"])
         visitbaselinedate = self.config["basedate"]
         additionaldatediffvarname = self.config["additionaldatediffvarname"]
-        additionaldatedifftimeunits = int(self.config["additionaldatedifftimeunits"])
+        additionaldatedifftimeunits = int(
+            self.config["additionaldatedifftimeunits"]
+        )
         for i in range(len(self._data)):
             if i > 0:
                 # Patient ID
                 mrn = self._data[i][self._variables[self.config["patientid"]]]
                 # print ("patient"+str(mrn))
                 # Visit Date
-                if visitdateformat == 1:  # Use date from column visitdatevarname
-                    startdate = self._data[i][self._variables[visitdatevarname]]
+                if (
+                    visitdateformat == 1
+                ):  # Use date from column visitdatevarname
+                    startdate = self._data[i][
+                        self._variables[visitdatevarname]
+                    ]
                     datecolignore = self._variables[visitdatevarname]
                 else:
                     timediff2 = 0
-                    timediff = float(self._data[i][self._variables[visitdatevarname]])
+                    timediff = float(
+                        self._data[i][self._variables[visitdatevarname]]
+                    )
                     datecolignore = self._variables[visitdatevarname]
                     # carry out conversion between string
                     # to datetime object
@@ -173,13 +234,21 @@ class ETLdbGap:
                         visitbaselinedate, "%d/%m/%Y"
                     )
 
-                    if visitdateformat == 2:  # use visitbaselinedate and add Days
-                        startdate = beginDate + datetime.timedelta(days=int(timediff))
-                    elif visitdateformat == 3:  # use visitbaselinedate and add Months
+                    if (
+                        visitdateformat == 2
+                    ):  # use visitbaselinedate and add Days
+                        startdate = beginDate + datetime.timedelta(
+                            days=int(timediff)
+                        )
+                    elif (
+                        visitdateformat == 3
+                    ):  # use visitbaselinedate and add Months
                         startdate = beginDate + datetime.timedelta(
                             days=int(timediff * 12)
                         )
-                    elif visitdateformat == 4:  # use visitbaselinedate and add Years
+                    elif (
+                        visitdateformat == 4
+                    ):  # use visitbaselinedate and add Years
                         startdate = beginDate + datetime.timedelta(
                             days=int(timediff * 365)
                         )
@@ -269,9 +338,15 @@ class ETLdbGap:
                 # Patient ID
                 mrn = self._data[i][self._variables[self.config["patientid"]]]
 
-                beginDate = datetime.datetime.strptime(visitbaselinedate, "%d/%m/%Y")
-                righttimediff = float(self._data[i][self._variables[righteyedate]])
-                lefttimediff = float(self._data[i][self._variables[lefteyedate]])
+                beginDate = datetime.datetime.strptime(
+                    visitbaselinedate, "%d/%m/%Y"
+                )
+                righttimediff = float(
+                    self._data[i][self._variables[righteyedate]]
+                )
+                lefttimediff = float(
+                    self._data[i][self._variables[lefteyedate]]
+                )
                 rightstartdate = beginDate + datetime.timedelta(
                     days=int(righttimediff * 365)
                 )
@@ -341,14 +416,22 @@ class ETLdbGap:
         visitdatevarname = self.config["datevar"]
         visitdateformat = int(self.config["dateformat"])
         visitbaselinedate = self.config["basedate"]
+        to_days = [0,0,1,12,365][visitdateformat]
+        print("visit",visitdateformat,to_days)
         for i in range(len(self._data)):
             if i > 0:
                 # Patient ID
                 mrn = self._data[i][self._variables[self.config["patientid"]]]
                 # Visit Date
-                timediff = float(self._data[i][self._variables[visitdatevarname]])
-                beginDate = datetime.datetime.strptime(visitbaselinedate, "%d/%m/%Y")
-                startdate = beginDate + datetime.timedelta(days=int(timediff * 365))
+                timediff = float(
+                    self._data[i][self._variables[visitdatevarname]]
+                )
+                beginDate = datetime.datetime.strptime(
+                    visitbaselinedate, "%d/%m/%Y"
+                )
+                startdate = beginDate + datetime.timedelta(
+                    days=int(timediff * to_days)
+                )
                 dt_string = startdate.strftime("%Y-%m-%d")
                 # Loop through cells in row
                 for j, value in enumerate(self._data[i]):
@@ -388,7 +471,6 @@ class ETLdbGap:
             for row in facts:
                 writer.writerow(row)
 
-
     def write_accord_key_facts(self, factsfile):
         mrn = ""
         startdate = datetime.datetime.now()
@@ -411,8 +493,12 @@ class ETLdbGap:
                 mrn = self._data[i][self._variables[self.config["patientid"]]]
                 # print("patient " + str(mrn))
                 # Visit Date
-                if visitdateformat == 1:  # Use date from column visitdatevarname
-                    startdate = self._data[i][self._variables[visitdatevarname]]
+                if (
+                    visitdateformat == 1
+                ):  # Use date from column visitdatevarname
+                    startdate = self._data[i][
+                        self._variables[visitdatevarname]
+                    ]
                     datecolignore = self._variables[visitdatevarname]
                 elif visitdateformat == 0:
                     startdate = datetime.datetime.strptime(
@@ -421,7 +507,9 @@ class ETLdbGap:
                     dt_string = startdate.strftime("%Y-%m-%d")
                 else:
                     timediff2 = 0
-                    timediff = float(self._data[i][self._variables[visitdatevarname]])
+                    timediff = float(
+                        self._data[i][self._variables[visitdatevarname]]
+                    )
                     datecolignore = self._variables[visitdatevarname]
                     # carry out conversion between string
                     # to datetime object
@@ -430,13 +518,21 @@ class ETLdbGap:
                         visitbaselinedate, "%d/%m/%Y"
                     )
 
-                    if visitdateformat == 2:  # use visitbaselinedate and add Days
-                        startdate = beginDate + datetime.timedelta(days=int(timediff))
-                    elif visitdateformat == 3:  # use visitbaselinedate and add Months
+                    if (
+                        visitdateformat == 2
+                    ):  # use visitbaselinedate and add Days
+                        startdate = beginDate + datetime.timedelta(
+                            days=int(timediff)
+                        )
+                    elif (
+                        visitdateformat == 3
+                    ):  # use visitbaselinedate and add Months
                         startdate = beginDate + datetime.timedelta(
                             days=int(timediff * 12)
                         )
-                    elif visitdateformat == 4:  # use visitbaselinedate and add Years
+                    elif (
+                        visitdateformat == 4
+                    ):  # use visitbaselinedate and add Years
                         startdate = beginDate + datetime.timedelta(
                             days=int(timediff * 365)
                         )
@@ -504,7 +600,9 @@ class ETLdbGap:
                 )
                 # Loop through cells in row
                 for j, value in enumerate(self._data[i]):
-                    varname = list(self._variables.keys())[list(self._variables.values()).index(j)]
+                    varname = list(self._variables.keys())[
+                        list(self._variables.values()).index(j)
+                    ]
                     # Skip MRN, date columns, and blanks
                     if (
                         j == self._variables[self.config["patientid"]]
@@ -515,15 +613,22 @@ class ETLdbGap:
                         continue
                     else:
                         # Is there a specific time variable for this variable?
-                        try: self.config["timevar"][varname]
-                        except KeyError: timevar = defaulttimevar
-                        else: timevar = self.config["timevar"][varname]
-                        if self._data[i][self._variables[timevar]].isalnum():
-                            timediff = float(self._data[i][self._variables[timevar]])
+                        try:
+                            self.config["timevar"][varname]
+                        except KeyError:
+                            timevar = defaulttimevar
                         else:
-                            timediff = float(self._data[i][self._variables[defaulttimevar]])
-                            
-                        print("bob",timediff)
+                            timevar = self.config["timevar"][varname]
+                        if self._data[i][self._variables[timevar]].isalnum():
+                            timediff = float(
+                                self._data[i][self._variables[timevar]]
+                            )
+                        else:
+                            timediff = float(
+                                self._data[i][self._variables[defaulttimevar]]
+                            )
+
+                        print("bob", timediff)
                         startdate = beginDate + datetime.timedelta(
                             days=int(timediff * 365)
                         )
@@ -564,6 +669,10 @@ class ETLdbGap:
             self.write_fundus_facts(factsfile)
         elif self.config["filebase"] == "mortality":
             self.write_mortality_facts(factsfile)
+        elif (
+            self.config["filebase"] == "cdc"
+        ):  # cdc can use the mortality method
+            self.write_mortality_facts(factsfile)
         elif self.config["filebase"] == "accord_key":
             self.write_accord_key_facts(factsfile)
 
@@ -574,8 +683,12 @@ class ETLdbGap:
 #
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-c", "--config", help="ETL config file", default="etl.yml")
-    parser.add_argument("-d", "--dictionary", help="file containing data dictionary")
+    parser.add_argument(
+        "-c", "--config", help="ETL config file", default="etl.yml"
+    )
+    parser.add_argument(
+        "-d", "--dictionary", help="file containing data dictionary"
+    )
     parser.add_argument("-i", "--input", help="file data to be ETL'd")
     args = parser.parse_args()
     return args
