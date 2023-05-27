@@ -372,15 +372,20 @@ class ETLdbGap:
 
                 # Loop through cells in row
                 # Should skip time variables
+                if self.config["datemode"] == 2:
+                    skiplist = list(self.config["timevar"].keys())
+                else:
+                    skiplist = list(self.config["timevar"].values())
                 for j, value in enumerate(self._data[i]):
                     varname = list(self._variables.keys())[
                         list(self._variables.values()).index(j)
                     ]
                     if (
                         j == self._variables[self.config["patientid"]]
-                        or varname in list(self.config["timevar"].keys())
-                        or varname in list(self.config["timevar"].values())
+                        or self._data[i][j].strip() == ""
+                        or varname in skiplist
                     ):
+                        print("also skipped",i,j,varname,skiplist)
                         continue
                     else:
                         if self._data[i][j].strip() == "":
@@ -502,95 +507,13 @@ class ETLdbGap:
 
         return facts
 
-    def collect_followup_facts(self):
-        mrn = ""
-        startdate = datetime.datetime.now()
-        code = ""
-        value = ""
-
-        # Collect facts for facts.csv
-        facts = []
-        datecolignore = -1
-        code = ""
-        value = ""
-        dt_string = ""
-        defaulttimevar = self.config["timevar"]["default"]
-        visitbaselinedate = self.config["basedate"]
-
-        for i in range(len(self._data)):
-            if i > 0:
-                # Patient ID
-                mrn = self._data[i][self._variables[self.config["patientid"]]]
-                # Data of randomization
-                beginDate = datetime.datetime.strptime(
-                    visitbaselinedate, "%d/%m/%Y"
-                )
-                # Loop through cells in row
-                for j, value in enumerate(self._data[i]):
-                    varname = list(self._variables.keys())[
-                        list(self._variables.values()).index(j)
-                    ]
-                    # Skip MRN, date columns, and blanks
-                    if (
-                        j == self._variables[self.config["patientid"]]
-                        or self._data[i][j].strip() == ""
-                        or varname == defaulttimevar
-                        or varname in list(self.config["timevar"].values())
-                    ):
-                        continue
-                    else:
-                        # Is there a specific time variable for this variable?
-                        try:
-                            self.config["timevar"][varname]
-                        except KeyError:
-                            timevar = defaulttimevar
-                        else:
-                            timevar = self.config["timevar"][varname]
-                        if self._data[i][self._variables[timevar]].isalnum():
-                            timediff = float(
-                                self._data[i][self._variables[timevar]]
-                            )
-                        else:
-                            timediff = float(
-                                self._data[i][self._variables[defaulttimevar]]
-                            )
-
-                        startdate = beginDate + datetime.timedelta(
-                            days=int(timediff * 365)
-                        )
-                        dt_string = startdate.strftime("%Y-%m-%d")
-
-                        code = "-"
-                        for x in range(len(self._map_phenotype_to_concept)):
-                            # Check if it is an enumerated value, then only add code
-                            if (
-                                self._map_phenotype_to_concept[x][3] == value
-                                and self._map_phenotype_to_concept[x][4]
-                                == self._data[0][j]
-                            ):
-                                code = self._map_phenotype_to_concept[x][1]
-                                value = ""
-
-                        if code == "-":
-                            code = self._data[0][j]
-                            value = self._data[i][j]
-                        facts.append((mrn, str(dt_string), code, value))
-
-        return facts
-
     def write_facts(self, factsfile):
         if self.config["filebase"] == "adverse":
             facts = self.collect_adverse_facts()
-        elif self.config["filebase"] == "followup":
-            facts = self.collect_followup_facts()
-        elif self.config["filebase"] == "fundus":
-            facts = self.collect_facts()
-        elif self.config["filebase"] == "mortality":
-            facts = self.collect_facts()
-        elif (self.config["filebase"] == "cdc"):  
-            facts = self.collect_facts()
         elif self.config["filebase"] == "accord_key":
             facts = self.collect_accord_key_facts()
+        else: 
+            facts = self.collect_facts()
 
         with open(factsfile, "w", newline="") as f:
             writer = csv.writer(f)
