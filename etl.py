@@ -61,7 +61,7 @@ class ETLdbGap:
     # The AREDS2 dictionaries have enumerated values separated by commas
     #
     def read_areds2_data_dictionary(self, dictfile):
-        with open(dictfile) as csvfile:
+        with open(dictfile, "r", encoding="utf-8-sig") as csvfile:
             ptr = csvfile.tell()
             #
             # Read headers explicitly and let DictReader make a list of
@@ -86,7 +86,7 @@ class ETLdbGap:
                 continue
             vartype = row[self.config["typename"]]
             if type(row[self.config["enumname"]]) is list:
-                if vartype == "encoded value":
+                if "encoded value" in vartype:
                     values = list(filter(len, row[self.config["enumname"]]))
                 else:
                     values = row[self.config["enumname"]][0]
@@ -185,7 +185,8 @@ class ETLdbGap:
     # Mode 1a: all times are self.config["timevar"]["default"] + "basedate"
     # Mode 1b: facts are tied to certain time variables via explicit config
     # Mode 2: facts are tied to certain time variables via regex
-    # Mode 3: a list of possible additional time points 
+    # Mode 3: a list of possible additional time points, represented as deltas
+    # Mode 4: a list of possible additional time points, relative to "basedate"
     def fact_time(self, i, j):
         visitbaselinedate = self.config["basedate"]
         visitdateformat = int(self.config["dateformat"])
@@ -236,17 +237,31 @@ class ETLdbGap:
         elif (self.config["datemode"]) == 3:
             defaulttimevar = self.config["timevar"]["default"]
             addltimevars = self.config["additionaltimevar"]
-            timediff = float(
-                self._data[i][self._variables[defaulttimevar]]
-            )
+            timediff = float(self._data[i][self._variables[defaulttimevar]])
             addltime = 0
             for tv in addltimevars:
-              if self._data[i][self._variables[tv]].isnumeric():
-                  timeval = int(self._data[i][self._variables[tv]])
-                  addltime = max(addltime,timeval)
+                if self._data[i][self._variables[tv]].isnumeric():
+                    timeval = int(self._data[i][self._variables[tv]])
+                    addltime = max(addltime, timeval)
+            startdate = (
+                beginDate
+                + datetime.timedelta(days=int(timediff * to_days))
+                + datetime.timedelta(days=addltime)
+            )
+            return startdate.strftime("%Y-%m-%d")
+        elif (self.config["datemode"]) == 4:
+            defaulttimevar = self.config["timevar"]["default"]
+            addltimevars = self.config["additionaltimevar"]
+            timediff = float(self._data[i][self._variables[defaulttimevar]])
+            addltime = 0
+            for tv in addltimevars:
+                if self._data[i][self._variables[tv]].isnumeric():
+                    timeval = int(self._data[i][self._variables[tv]])
+                    addltime = max(addltime, timeval)
+            timediff = max(timediff, addltime)
             startdate = beginDate + datetime.timedelta(
-                days=int(timediff * to_days)) + datetime.timedelta(
-                days=addltime)
+                days=int(timediff * to_days)
+            )
             return startdate.strftime("%Y-%m-%d")
 
     def collect_facts(self):
@@ -295,7 +310,7 @@ class ETLdbGap:
                             code = self._data[0][j]
                             value = self._data[i][j]
 
-                        dt_string = self.fact_time(i,j)
+                        dt_string = self.fact_time(i, j)
                         facts.append((mrn, str(dt_string), code, value))
 
         return facts
@@ -398,7 +413,7 @@ class ETLdbGap:
     def write_facts(self, factsfile):
         if self.config["filebase"] == "accord_key":
             facts = self.collect_accord_key_facts()
-        else: 
+        else:
             facts = self.collect_facts()
 
         with open(factsfile, "w", newline="") as f:
