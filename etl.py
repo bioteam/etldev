@@ -11,7 +11,7 @@ import csv
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-c", "--config", help="ETL config file", default="etl.yml"
+        "-c", "--config", help="ETL config file"
     )
     parser.add_argument(
         "-d", "--dictionary", help="file containing data dictionary"
