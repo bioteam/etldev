@@ -3,11 +3,13 @@ separator: '(?<!D);'
 enumname:  'CODE_MEANING'
 typename: 'TYPE'
 varname: 'VARNAME'
-patientid: 'ID2' #patientid
-basedate: '1/1/2000'
-dateformat: '4' # visitdateformat
-rightdate: 'REPHTIME'
-leftdate: 'LEPHTIME'
+patientid: 'ID2' 
+basedate: '1/1/2000' # Should be replaced with something real
+dateformat: 4 # Years since randomization
+datemode: 2   # Regex-based
+timevar:
+    REPHTIME: '\b(?:RE\w+|\w+RE)\b'
+    LEPHTIME: '\b(?:LE\w+|\w+LE)\b'
 pathroot: 'dbGaP/AREDS/fundus Events' #pathrootname
 filebase: 'fundus'
 ...

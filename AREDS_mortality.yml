@@ -5,8 +5,10 @@ typename: 'TYPE'
 varname: 'VARNAME'
 patientid: 'ID2' #patientid
 basedate: '1/1/2000'
-dateformat: '4' 
-datevar: 'DEATHTIME' #diffdatevarname
+dateformat: 4 
+datemode: 1  # Single timestamp for all facts
+timevar:
+    default: 'DEATHTIME'
 pathroot: 'dbGaP/AREDS/Mortality Events' #pathrootname
 filebase: 'mortality'
 ...

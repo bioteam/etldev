@@ -10,9 +10,7 @@ import csv
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-c", "--config", help="ETL config file"
-    )
+    parser.add_argument("-c", "--config", help="ETL config file")
     parser.add_argument(
         "-d", "--dictionary", help="file containing data dictionary"
     )
@@ -203,7 +201,6 @@ class ETLdbGap:
             if i > 0:
                 # Patient ID
                 mrn = self._data[i][self._variables[self.config["patientid"]]]
-                # print ("patient"+str(mrn))
                 # Visit Date
                 if (
                     visitdateformat == 1
@@ -304,125 +301,85 @@ class ETLdbGap:
                             code = self._data[0][j]
                             value = self._data[i][j]
                         facts.append((mrn, str(dt_string), code, value))
-                        
-        return facts
-
-    def collect_fundus_facts(self):
-        mrn = ""
-        startdate = datetime.datetime.now()
-        code = ""
-        value = ""
-
-        # Collect facts for facts.csv
-        facts = []
-        datecolignore = -1
-        code = ""
-        value = ""
-        dt_string = ""
-        righteyedate = self.config["rightdate"]
-        righteyere = r"\b(?:RE\w+|\w+RE)\b"
-        lefteyedate = self.config["leftdate"]
-        lefteyere = r"\b(?:LE\w+|\w+LE)\b"
-        visitdateformat = int(self.config["dateformat"])
-        visitbaselinedate = self.config["basedate"]
-        for i in range(len(self._data)):
-            if i > 0:
-                # Patient ID
-                mrn = self._data[i][self._variables[self.config["patientid"]]]
-
-                beginDate = datetime.datetime.strptime(
-                    visitbaselinedate, "%d/%m/%Y"
-                )
-                righttimediff = float(
-                    self._data[i][self._variables[righteyedate]]
-                )
-                lefttimediff = float(
-                    self._data[i][self._variables[lefteyedate]]
-                )
-                rightstartdate = beginDate + datetime.timedelta(
-                    days=int(righttimediff * 365)
-                )
-                leftstartdate = beginDate + datetime.timedelta(
-                    days=int(lefttimediff * 365)
-                )
-                laststartdate = max(rightstartdate, leftstartdate)
-
-                # Loop through cells in row
-                for j, value in enumerate(self._data[i]):
-                    if (
-                        j == self._variables[self.config["patientid"]]
-                        or j == self._variables[righteyedate]
-                        or j == self._variables[lefteyedate]
-                    ):
-                        continue
-                    else:
-                        if self._data[i][j].strip() == "":
-                            continue
-
-                        code = "-"
-                        for x in range(len(self._map_phenotype_to_concept)):
-                            # Check if it is an enumerated value,
-                            # then only add code
-                            if (
-                                self._map_phenotype_to_concept[x][3] == value
-                                and self._map_phenotype_to_concept[x][4]
-                                == self._data[0][j]
-                            ):
-                                code = self._map_phenotype_to_concept[x][1]
-                                value = ""
-
-                        if code == "-":
-                            code = self._data[0][j]
-                            value = self._data[i][j]
-                        if re.search(righteyere, self._data[0][j]):
-                            dt_string = rightstartdate.strftime("%Y-%m-%d")
-                        elif re.search(lefteyere, self._data[0][j]):
-                            dt_string = leftstartdate.strftime("%Y-%m-%d")
-                        else:
-                            dt_string = laststartdate.strftime("%Y-%m-%d")
-
-                        facts.append((mrn, str(dt_string), code, value))
-                        # print (mrn + ", " + str(dt_string) + ", " + str(code) + ", " + str (value) )
 
         return facts
 
-    def collect_mortality_facts(self):
-        mrn = ""
-        startdate = datetime.datetime.now()
-        code = ""
-        value = ""
-
-        # Collect facts for facts.csv
-        facts = []
-        datecolignore = -1
-        code = ""
-        value = ""
-        dt_string = ""
-        visitdatevarname = self.config["datevar"]
-        visitdateformat = int(self.config["dateformat"])
+    #
+    # Timestamps for individual facts.
+    #
+    # Mode 0: all times are self.config["basedate"]
+    # Mode 1a: all times are self.config["timevar"]["default"] + "basedate"
+    # Mode 1b: facts are tied to certain time variables via explicit config
+    # Mode 2: facts are tied to certain time variables via regex
+    # Mode 3: an ordered list of possible times
+    def fact_time(self, i, j):
         visitbaselinedate = self.config["basedate"]
-        to_days = [0,0,1,12,365][visitdateformat]
-        print("visit",visitdateformat,to_days)
-        for i in range(len(self._data)):
-            if i > 0:
-                # Patient ID
-                mrn = self._data[i][self._variables[self.config["patientid"]]]
-                # Visit Date
+        visitdateformat = int(self.config["dateformat"])
+        beginDate = datetime.datetime.strptime(visitbaselinedate, "%d/%m/%Y")
+        if int(self.config["datemode"]) == 0:
+            return beginDate
+        to_days = [0, 0, 1, 12, 365][visitdateformat]
+        varname = list(self._variables.keys())[
+            list(self._variables.values()).index(j)
+        ]
+        if (self.config["datemode"]) == 1:
+            defaulttimevar = self.config["timevar"]["default"]
+            # Is there a specific time variable for this variable?
+            try:
+                self.config["timevar"][varname]
+            except KeyError:
+                timevar = defaulttimevar
+            else:
+                timevar = self.config["timevar"][varname]
+            if self._data[i][self._variables[timevar]].isalnum():
+                timediff = float(self._data[i][self._variables[timevar]])
+            else:
                 timediff = float(
-                    self._data[i][self._variables[visitdatevarname]]
+                    self._data[i][self._variables[defaulttimevar]]
                 )
-                beginDate = datetime.datetime.strptime(
-                    visitbaselinedate, "%d/%m/%Y"
-                )
+            startdate = beginDate + datetime.timedelta(
+                days=int(timediff * to_days)
+            )
+            return startdate.strftime("%Y-%m-%d")
+        if (self.config["datemode"]) == 2:
+            startdates = []
+            for tv in self.config["timevar"]:
+                tvre = self.config["timevar"][tv]
+                timediff = float(self._data[i][self._variables[tv]])
                 startdate = beginDate + datetime.timedelta(
                     days=int(timediff * to_days)
                 )
-                dt_string = startdate.strftime("%Y-%m-%d")
+                if re.search(tvre, self._data[0][j]):
+                    return startdate.strftime("%Y-%m-%d")
+                startdates.append(startdate)
+
+            print(f"No matching time for: {self._data[0][j]!r}")
+            if len(startdates):
+                laststartdate = max(startdates)
+                return laststartdate.strftime("%Y-%m-%d")
+            else:
+                return -1
+
+    def collect_facts(self):
+        facts = []
+        code = ""
+        value = ""
+        dt_string = ""
+        for i in range(len(self._data)):
+            if i > 0:
+                # Patient ID
+                mrn = self._data[i][self._variables[self.config["patientid"]]]
+
                 # Loop through cells in row
+                # Should skip time variables
                 for j, value in enumerate(self._data[i]):
+                    varname = list(self._variables.keys())[
+                        list(self._variables.values()).index(j)
+                    ]
                     if (
                         j == self._variables[self.config["patientid"]]
-                        or j == self._variables[self.config["datevar"]]
+                        or varname in list(self.config["timevar"].keys())
+                        or varname in list(self.config["timevar"].values())
                     ):
                         continue
                     else:
@@ -444,8 +401,9 @@ class ETLdbGap:
                         if code == "-":
                             code = self._data[0][j]
                             value = self._data[i][j]
+
+                        dt_string = self.fact_time(i,j)
                         facts.append((mrn, str(dt_string), code, value))
-                        # print (mrn + ", " + str(dt_string) + ", " + str(code) + ", " + str (value) )
 
         return facts
 
@@ -469,7 +427,6 @@ class ETLdbGap:
             if i > 0:
                 # Patient ID
                 mrn = self._data[i][self._variables[self.config["patientid"]]]
-                # print("patient " + str(mrn))
                 # Visit Date
                 if (
                     visitdateformat == 1
@@ -542,7 +499,6 @@ class ETLdbGap:
                             code = self._data[0][j]
                             value = self._data[i][j]
                         facts.append((mrn, str(dt_string), code, value))
-                        # print (mrn + ", " + str(dt_string) + ", " + str(code) + ", " + str (value) )
 
         return facts
 
@@ -599,7 +555,6 @@ class ETLdbGap:
                                 self._data[i][self._variables[defaulttimevar]]
                             )
 
-                        print("bob", timediff)
                         startdate = beginDate + datetime.timedelta(
                             days=int(timediff * 365)
                         )
@@ -620,26 +575,22 @@ class ETLdbGap:
                             code = self._data[0][j]
                             value = self._data[i][j]
                         facts.append((mrn, str(dt_string), code, value))
-                        # print (mrn + ", " + str(dt_string) + ", " + str(code) + ", " + str (value) )
 
         return facts
-        
 
     def write_facts(self, factsfile):
         if self.config["filebase"] == "adverse":
             facts = self.collect_adverse_facts()
         elif self.config["filebase"] == "followup":
-            self.collect_followup_facts()
+            facts = self.collect_followup_facts()
         elif self.config["filebase"] == "fundus":
-            self.collect_fundus_facts()
+            facts = self.collect_facts()
         elif self.config["filebase"] == "mortality":
-            self.collect_mortality_facts()
-        elif (
-            self.config["filebase"] == "cdc"
-        ):  # cdc can use the mortality method
-            self.collect_mortality_facts()
+            facts = self.collect_facts()
+        elif (self.config["filebase"] == "cdc"):  
+            facts = self.collect_facts()
         elif self.config["filebase"] == "accord_key":
-            self.collect_accord_key_facts()
+            facts = self.collect_accord_key_facts()
 
         with open(factsfile, "w", newline="") as f:
             writer = csv.writer(f)
@@ -654,9 +605,7 @@ class ETLdbGap:
 #
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-c", "--config", help="ETL config file", default="etl.yml"
-    )
+    parser.add_argument("-c", "--config", help="ETL config file")
     parser.add_argument(
         "-d", "--dictionary", help="file containing data dictionary"
     )
