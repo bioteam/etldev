@@ -5,7 +5,11 @@ typename: 'TYPE'
 varname: 'VARNAME'
 patientid: 'ID2' #patientid
 basedate: '1/1/2000'
-dateformat: '4' # visitdateformat
+dateformat: 4 # visitdateformat
+datemode: 3
+timevar:
+    default: 'OBSTIME'
+additionaltimevar: ['ADVTIME']
 datevar: 'OBSTIME' #diffdatevarname
 additionaldatediffvarname: 'ADVTIME'
 additionaldatedifftimeunits: '2'

@@ -178,132 +178,6 @@ class ETLdbGap:
             self._variables[self._data[0][i]] = i
             i += 1
 
-    def collect_adverse_facts(self):
-        mrn = ""
-        startdate = datetime.datetime.now()
-        code = ""
-        value = ""
-
-        # Collect facts for facts.csv
-        facts = []
-        datecolignore = -1
-        code = ""
-        value = ""
-        dt_string = ""
-        visitdatevarname = self.config["datevar"]
-        visitdateformat = int(self.config["dateformat"])
-        visitbaselinedate = self.config["basedate"]
-        additionaldatediffvarname = self.config["additionaldatediffvarname"]
-        additionaldatedifftimeunits = int(
-            self.config["additionaldatedifftimeunits"]
-        )
-        for i in range(len(self._data)):
-            if i > 0:
-                # Patient ID
-                mrn = self._data[i][self._variables[self.config["patientid"]]]
-                # Visit Date
-                if (
-                    visitdateformat == 1
-                ):  # Use date from column visitdatevarname
-                    startdate = self._data[i][
-                        self._variables[visitdatevarname]
-                    ]
-                    datecolignore = self._variables[visitdatevarname]
-                else:
-                    timediff2 = 0
-                    timediff = float(
-                        self._data[i][self._variables[visitdatevarname]]
-                    )
-                    datecolignore = self._variables[visitdatevarname]
-                    # carry out conversion between string
-                    # to datetime object
-                    if additionaldatediffvarname != "NA":
-                        if self._data[i][
-                            self._variables[additionaldatediffvarname]
-                        ].isnumeric():
-                            timediff2 = float(
-                                self._data[i][
-                                    self._variables[additionaldatediffvarname]
-                                ]
-                            )
-
-                    beginDate = datetime.datetime.strptime(
-                        visitbaselinedate, "%d/%m/%Y"
-                    )
-
-                    if (
-                        visitdateformat == 2
-                    ):  # use visitbaselinedate and add Days
-                        startdate = beginDate + datetime.timedelta(
-                            days=int(timediff)
-                        )
-                    elif (
-                        visitdateformat == 3
-                    ):  # use visitbaselinedate and add Months
-                        startdate = beginDate + datetime.timedelta(
-                            days=int(timediff * 12)
-                        )
-                    elif (
-                        visitdateformat == 4
-                    ):  # use visitbaselinedate and add Years
-                        startdate = beginDate + datetime.timedelta(
-                            days=int(timediff * 365)
-                        )
-
-                    if (
-                        additionaldatedifftimeunits > 1
-                        and additionaldatedifftimeunits < 5
-                    ):
-                        if (
-                            additionaldatedifftimeunits == 2
-                        ):  # use visitbaselinedate and add Days
-                            startdate = startdate + datetime.timedelta(
-                                days=int(timediff2)
-                            )
-                        elif (
-                            additionaldatedifftimeunits == 3
-                        ):  # use visitbaselinedate and add Months
-                            startdate = startdate + datetime.timedelta(
-                                days=int(timediff2 * 12)
-                            )
-                        elif (
-                            additionaldatedifftimeunits == 4
-                        ):  # use visitbaselinedate and add Years
-                            startdate = startdate + datetime.timedelta(
-                                days=int(timediff2 * 365)
-                            )
-
-                    dt_string = startdate.strftime("%Y-%m-%d")
-                # Loop through cells in row
-                for j, value in enumerate(self._data[i]):
-                    if (
-                        j == self._variables[self.config["patientid"]]
-                        or j == datecolignore
-                    ):
-                        continue
-                    else:
-                        if self._data[i][j].strip() == "":
-                            continue
-
-                        code = "-"
-                        for x in range(len(self._map_phenotype_to_concept)):
-                            # Check if it is an enumerated value,
-                            # then only add code
-                            if (
-                                self._map_phenotype_to_concept[x][3] == value
-                                and self._map_phenotype_to_concept[x][4]
-                                == self._data[0][j]
-                            ):
-                                code = self._map_phenotype_to_concept[x][1]
-                                value = ""
-
-                        if code == "-":
-                            code = self._data[0][j]
-                            value = self._data[i][j]
-                        facts.append((mrn, str(dt_string), code, value))
-
-        return facts
-
     #
     # Timestamps for individual facts.
     #
@@ -311,7 +185,7 @@ class ETLdbGap:
     # Mode 1a: all times are self.config["timevar"]["default"] + "basedate"
     # Mode 1b: facts are tied to certain time variables via explicit config
     # Mode 2: facts are tied to certain time variables via regex
-    # Mode 3: an ordered list of possible times
+    # Mode 3: a list of possible additional time points 
     def fact_time(self, i, j):
         visitbaselinedate = self.config["basedate"]
         visitdateformat = int(self.config["dateformat"])
@@ -341,7 +215,7 @@ class ETLdbGap:
                 days=int(timediff * to_days)
             )
             return startdate.strftime("%Y-%m-%d")
-        if (self.config["datemode"]) == 2:
+        elif (self.config["datemode"]) == 2:
             startdates = []
             for tv in self.config["timevar"]:
                 tvre = self.config["timevar"][tv]
@@ -359,6 +233,21 @@ class ETLdbGap:
                 return laststartdate.strftime("%Y-%m-%d")
             else:
                 return -1
+        elif (self.config["datemode"]) == 3:
+            defaulttimevar = self.config["timevar"]["default"]
+            addltimevars = self.config["additionaltimevar"]
+            timediff = float(
+                self._data[i][self._variables[defaulttimevar]]
+            )
+            addltime = 0
+            for tv in addltimevars:
+              if self._data[i][self._variables[tv]].isnumeric():
+                  timeval = int(self._data[i][self._variables[tv]])
+                  addltime = max(addltime,timeval)
+            startdate = beginDate + datetime.timedelta(
+                days=int(timediff * to_days)) + datetime.timedelta(
+                days=addltime)
+            return startdate.strftime("%Y-%m-%d")
 
     def collect_facts(self):
         facts = []
@@ -385,7 +274,6 @@ class ETLdbGap:
                         or self._data[i][j].strip() == ""
                         or varname in skiplist
                     ):
-                        print("also skipped",i,j,varname,skiplist)
                         continue
                     else:
                         if self._data[i][j].strip() == "":
@@ -508,9 +396,7 @@ class ETLdbGap:
         return facts
 
     def write_facts(self, factsfile):
-        if self.config["filebase"] == "adverse":
-            facts = self.collect_adverse_facts()
-        elif self.config["filebase"] == "accord_key":
+        if self.config["filebase"] == "accord_key":
             facts = self.collect_accord_key_facts()
         else: 
             facts = self.collect_facts()
