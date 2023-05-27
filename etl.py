@@ -180,7 +180,7 @@ class ETLdbGap:
             self._variables[self._data[0][i]] = i
             i += 1
 
-    def write_adverse_facts(self, factsfile):
+    def collect_adverse_facts(self):
         mrn = ""
         startdate = datetime.datetime.now()
         code = ""
@@ -304,18 +304,10 @@ class ETLdbGap:
                             code = self._data[0][j]
                             value = self._data[i][j]
                         facts.append((mrn, str(dt_string), code, value))
-                        # print (mrn + ", " + str(dt_string) + ", " + str(code) + ", " + str (value) )
+                        
+        return facts
 
-        # Write facts file
-
-        # factsfile = 'facts_' + self.config['filebase'] + '.csv'
-        with open(factsfile, "w", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow(["mrn", "start-date", "code", "value"])
-            for row in facts:
-                writer.writerow(row)
-
-    def write_fundus_facts(self, factsfile):
+    def collect_fundus_facts(self):
         mrn = ""
         startdate = datetime.datetime.now()
         code = ""
@@ -392,16 +384,9 @@ class ETLdbGap:
                         facts.append((mrn, str(dt_string), code, value))
                         # print (mrn + ", " + str(dt_string) + ", " + str(code) + ", " + str (value) )
 
-        # Write facts file
+        return facts
 
-        # factsfile = 'facts_' + self.config['filebase'] + '.csv'
-        with open(factsfile, "w", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow(["mrn", "start-date", "code", "value"])
-            for row in facts:
-                writer.writerow(row)
-
-    def write_mortality_facts(self, factsfile):
+    def collect_mortality_facts(self):
         mrn = ""
         startdate = datetime.datetime.now()
         code = ""
@@ -462,16 +447,9 @@ class ETLdbGap:
                         facts.append((mrn, str(dt_string), code, value))
                         # print (mrn + ", " + str(dt_string) + ", " + str(code) + ", " + str (value) )
 
-        # Write facts file
+        return facts
 
-        # factsfile = 'facts_' + self.config['filebase'] + '.csv'
-        with open(factsfile, "w", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow(["mrn", "start-date", "code", "value"])
-            for row in facts:
-                writer.writerow(row)
-
-    def write_accord_key_facts(self, factsfile):
+    def collect_accord_key_facts(self):
         mrn = ""
         startdate = datetime.datetime.now()
         code = ""
@@ -566,16 +544,9 @@ class ETLdbGap:
                         facts.append((mrn, str(dt_string), code, value))
                         # print (mrn + ", " + str(dt_string) + ", " + str(code) + ", " + str (value) )
 
-        # Write facts file
+        return facts
 
-        # factsfile = 'facts_' + self.config['filebase'] + '.csv'
-        with open(factsfile, "w", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow(["mrn", "start-date", "code", "value"])
-            for row in facts:
-                writer.writerow(row)
-
-    def write_followup_facts(self, factsfile):
+    def collect_followup_facts(self):
         mrn = ""
         startdate = datetime.datetime.now()
         code = ""
@@ -651,30 +622,30 @@ class ETLdbGap:
                         facts.append((mrn, str(dt_string), code, value))
                         # print (mrn + ", " + str(dt_string) + ", " + str(code) + ", " + str (value) )
 
-        # Write facts file
+        return facts
+        
 
-        # factsfile = 'facts_' + self.config['filebase'] + '.csv'
+    def write_facts(self, factsfile):
+        if self.config["filebase"] == "adverse":
+            facts = self.collect_adverse_facts()
+        elif self.config["filebase"] == "followup":
+            self.collect_followup_facts()
+        elif self.config["filebase"] == "fundus":
+            self.collect_fundus_facts()
+        elif self.config["filebase"] == "mortality":
+            self.collect_mortality_facts()
+        elif (
+            self.config["filebase"] == "cdc"
+        ):  # cdc can use the mortality method
+            self.collect_mortality_facts()
+        elif self.config["filebase"] == "accord_key":
+            self.collect_accord_key_facts()
+
         with open(factsfile, "w", newline="") as f:
             writer = csv.writer(f)
             writer.writerow(["mrn", "start-date", "code", "value"])
             for row in facts:
                 writer.writerow(row)
-
-    def write_facts(self, factsfile):
-        if self.config["filebase"] == "adverse":
-            self.write_adverse_facts(factsfile)
-        elif self.config["filebase"] == "followup":
-            self.write_followup_facts(factsfile)
-        elif self.config["filebase"] == "fundus":
-            self.write_fundus_facts(factsfile)
-        elif self.config["filebase"] == "mortality":
-            self.write_mortality_facts(factsfile)
-        elif (
-            self.config["filebase"] == "cdc"
-        ):  # cdc can use the mortality method
-            self.write_mortality_facts(factsfile)
-        elif self.config["filebase"] == "accord_key":
-            self.write_accord_key_facts(factsfile)
 
 
 #
