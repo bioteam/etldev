@@ -172,12 +172,14 @@ class ETLdbGap:
 
     def add_time(self, visitdateformat, beginDate, timediff):
         startdate = beginDate
-        if visitdateformat == 1:  # days
+        if visitdateformat == 2:  # days
             startdate = beginDate + datetime.timedelta(days=timediff)
-        elif visitdateformat == 2:  # months
-            startdate = beginDate + relativedelta(months=timediff)
-        elif visitdateformat == 3:  # years
-            startdate = beginDate + relativedelta(years=timediff)
+        elif visitdateformat == 3:  # months
+            startdate = beginDate + relativedelta(
+                months=int(timediff)
+            )  # relativedelta does not support Non-integer years and months which are ambiguous and not currently supported.
+        elif visitdateformat == 4:  # years
+            startdate = beginDate + datetime.timedelta(days=timediff * 365)
         return startdate
 
     #
@@ -211,14 +213,14 @@ class ETLdbGap:
             else:
                 timediff = float(self._data[i][self._variables[defaulttimevar]])
 
-            startdate = self.add_time(visitdateformat, beginDate, int(timediff))
+            startdate = self.add_time(visitdateformat, beginDate, timediff)
             return startdate.strftime("%Y-%m-%d")
         elif (self.config["datemode"]) == 2:
             startdates = []
             for tv in self.config["timevar"]:
                 tvre = self.config["timevar"][tv]
                 timediff = float(self._data[i][self._variables[tv]])
-                startdate = self.add_time(visitdateformat, beginDate, int(timediff))
+                startdate = self.add_time(visitdateformat, beginDate, timediff)
                 if re.search(tvre, self._data[0][j]):
                     return startdate.strftime("%Y-%m-%d")
                 startdates.append(startdate)
@@ -238,9 +240,11 @@ class ETLdbGap:
                 if self._data[i][self._variables[tv]].isnumeric():
                     timeval = int(self._data[i][self._variables[tv]])
                     addltime = max(addltime, timeval)
-
+            additionaldatedifftimeunits = int(
+                self.config["additionaldatedifftimeunits"]
+            )
             startdate = self.add_time(visitdateformat, beginDate, timediff)
-            startdate = self.add_time(visitdateformat, startdate, addltime)
+            startdate = self.add_time(additionaldatedifftimeunits, startdate, addltime)
             return startdate.strftime("%Y-%m-%d")
         elif (self.config["datemode"]) == 4:
             defaulttimevar = self.config["timevar"]["default"]
