@@ -5,6 +5,7 @@ import sys
 import re
 import datetime
 from datetime import timedelta
+from dateutil.relativedelta import relativedelta
 import csv
 
 
@@ -169,6 +170,18 @@ class ETLdbGap:
             self._variables[self._data[0][i]] = i
             i += 1
 
+    def add_time(self, visitdateformat, beginDate, timediff):
+        startdate = beginDate
+        if visitdateformat == 2:  # days
+            startdate = beginDate + datetime.timedelta(days=timediff)
+        elif visitdateformat == 3:  # months
+            startdate = beginDate + relativedelta(
+                months=int(timediff)
+            )  # relativedelta does not support Non-integer years and months which are ambiguous and not currently supported.
+        elif visitdateformat == 4:  # years
+            startdate = beginDate + datetime.timedelta(days=timediff * 365)
+        return startdate
+
     #
     # Timestamps for individual facts.
     #
@@ -199,14 +212,15 @@ class ETLdbGap:
                 timediff = float(self._data[i][self._variables[timevar]])
             else:
                 timediff = float(self._data[i][self._variables[defaulttimevar]])
-            startdate = beginDate + datetime.timedelta(days=int(timediff * to_days))
+
+            startdate = self.add_time(visitdateformat, beginDate, timediff)
             return startdate.strftime("%Y-%m-%d")
         elif (self.config["datemode"]) == 2:
             startdates = []
             for tv in self.config["timevar"]:
                 tvre = self.config["timevar"][tv]
                 timediff = float(self._data[i][self._variables[tv]])
-                startdate = beginDate + datetime.timedelta(days=int(timediff * to_days))
+                startdate = self.add_time(visitdateformat, beginDate, timediff)
                 if re.search(tvre, self._data[0][j]):
                     return startdate.strftime("%Y-%m-%d")
                 startdates.append(startdate)
@@ -226,11 +240,11 @@ class ETLdbGap:
                 if self._data[i][self._variables[tv]].isnumeric():
                     timeval = int(self._data[i][self._variables[tv]])
                     addltime = max(addltime, timeval)
-            startdate = (
-                beginDate
-                + datetime.timedelta(days=int(timediff * to_days))
-                + datetime.timedelta(days=addltime)
+            additionaldatedifftimeunits = int(
+                self.config["additionaldatedifftimeunits"]
             )
+            startdate = self.add_time(visitdateformat, beginDate, timediff)
+            startdate = self.add_time(additionaldatedifftimeunits, startdate, addltime)
             return startdate.strftime("%Y-%m-%d")
         elif (self.config["datemode"]) == 4:
             defaulttimevar = self.config["timevar"]["default"]
@@ -242,7 +256,7 @@ class ETLdbGap:
                     timeval = int(self._data[i][self._variables[tv]])
                     addltime = max(addltime, timeval)
             timediff = max(timediff, addltime)
-            startdate = beginDate + datetime.timedelta(days=int(timediff * to_days))
+            startdate = self.add_time(visitdateformat, beginDate, timediff)
             return startdate.strftime("%Y-%m-%d")
 
     def collect_facts(self):
