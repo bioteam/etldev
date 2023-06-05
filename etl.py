@@ -12,7 +12,9 @@ import csv
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--config", help="ETL config file")
-    parser.add_argument("-d", "--dictionary", help="file containing data dictionary")
+    parser.add_argument(
+        "-d", "--dictionary", help="file containing data dictionary"
+    )
     parser.add_argument("-i", "--input", help="file data to be ETL'd")
     args = parser.parse_args()
     return args
@@ -77,7 +79,9 @@ class ETLdbGap:
             line = csvfile.readline()
             names = line.split(sep=",")[:16]
 
-            reader = csv.DictReader(csvfile, fieldnames=names, restkey="VALUES")
+            reader = csv.DictReader(
+                csvfile, fieldnames=names, restkey="VALUES"
+            )
             for row in reader:
                 # Skip empty lines
                 if list(row.values())[0]:
@@ -110,7 +114,9 @@ class ETLdbGap:
             if len(values) <= 1:
                 if vartype.lower() == "num" or vartype.lower() == "integer":
                     i2b2vartype = "integer"
-                elif vartype.lower() == "decimal" or vartype.lower() == "float":
+                elif (
+                    vartype.lower() == "decimal" or vartype.lower() == "float"
+                ):
                     i2b2vartype = "float"
                 else:
                     i2b2vartype = "string"
@@ -142,14 +148,17 @@ class ETLdbGap:
                         dbgap_code_id = clin_name[0].replace('"', "").lstrip()
                         i2b2concept = clin_name[1].replace('"', "")
                         i2b2concept = i2b2concept.replace(",", " or ")
-                        i2b2conceptlabel = "".join(filter(str.isalnum, i2b2concept))
+                        i2b2conceptlabel = "".join(
+                            filter(str.isalnum, i2b2concept)
+                        )
                     if (
                         i2b2conceptlabel == dbgap_code_id
                     ):  # TODO: Ensure i2b2code is unique in the ontology
                         varcode = "".join(filter(str.isalnum, i2b2concept))
                     else:
                         varcode = (
-                            "".join(filter(str.isalnum, i2b2concept)) + dbgap_code_id
+                            "".join(filter(str.isalnum, i2b2concept))
+                            + dbgap_code_id
                         )
                     varname4i2b2 = "".join(varname.split())
                     if (len(varname4i2b2) + len(varcode)) > 50:
@@ -211,7 +220,9 @@ class ETLdbGap:
         beginDate = datetime.datetime.strptime(visitbaselinedate, "%d/%m/%Y")
         if int(self.config["datemode"]) == 0:
             return beginDate
-        varname = list(self._variables.keys())[list(self._variables.values()).index(j)]
+        varname = list(self._variables.keys())[
+            list(self._variables.values()).index(j)
+        ]
         if (self.config["datemode"]) == 1:
             defaulttimevar = self.config["timevar"]["default"]
             # Is there a specific time variable for this variable?
@@ -224,7 +235,9 @@ class ETLdbGap:
             if self._data[i][self._variables[timevar]].isalnum():
                 timediff = float(self._data[i][self._variables[timevar]])
             else:
-                timediff = float(self._data[i][self._variables[defaulttimevar]])
+                timediff = float(
+                    self._data[i][self._variables[defaulttimevar]]
+                )
 
             startdate = self.add_time(visitdateformat, beginDate, timediff)
             return startdate.strftime("%Y-%m-%d")
@@ -257,7 +270,9 @@ class ETLdbGap:
                 self.config["additionaldatedifftimeunits"]
             )
             startdate = self.add_time(visitdateformat, beginDate, timediff)
-            startdate = self.add_time(additionaldatedifftimeunits, startdate, addltime)
+            startdate = self.add_time(
+                additionaldatedifftimeunits, startdate, addltime
+            )
             return startdate.strftime("%Y-%m-%d")
         elif (self.config["datemode"]) == 4:
             defaulttimevar = self.config["timevar"]["default"]
@@ -349,7 +364,9 @@ class ETLdbGap:
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--config", help="ETL config file")
-    parser.add_argument("-d", "--dictionary", help="file containing data dictionary")
+    parser.add_argument(
+        "-d", "--dictionary", help="file containing data dictionary"
+    )
     parser.add_argument("-i", "--input", help="file data to be ETL'd")
     args = parser.parse_args()
     return args
