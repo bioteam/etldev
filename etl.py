@@ -52,9 +52,17 @@ class ETLdbGap:
             csvfile.seek(ptr)
             reader = csv.DictReader(csvfile)
             for row in reader:
-                # Skip empty lines
-                if list(row.values())[0]:
-                    self._data_dictionary.append(row)
+                trimmed_row = {}
+                for key, value in row.items():
+                    trimmed_row[
+                        key
+                    ] = value.strip()  # Trimming leading/trailing whitespace
+                self._data_dictionary.append(trimmed_row)
+
+            # for row in reader:
+            # Skip empty lines
+            # if list(row.values())[0]:
+            #   self._data_dictionary.append(row)
 
     #
     # The AREDS2 dictionaries have enumerated values separated by commas
@@ -91,7 +99,12 @@ class ETLdbGap:
                 values = re.split(
                     self.config["separator"], row[self.config["enumname"]]
                 )
-            path = "/".join(["", self.config["pathroot"], varname, ""])
+
+            if self.config["description"] != "":
+                description = row[self.config["description"]]
+                path = "/".join(["", self.config["pathroot"], description, ""])
+            else:
+                path = "/".join(["", self.config["pathroot"], varname, ""])
             # Check what i2b2 type of variable it is: integer, float,
             # string or large-string
             if len(values) <= 1:
@@ -191,13 +204,13 @@ class ETLdbGap:
     # Mode 2: facts are tied to certain time variables via regex
     # Mode 3: a list of possible additional time points, represented as deltas
     # Mode 4: a list of possible additional time points, relative to "basedate"
+    # Mode 5: time is defined by a visit variable that is parsable using a regex, e.g. F04, for 4 monrths visit
     def fact_time(self, i, j):
         visitbaselinedate = self.config["basedate"]
         visitdateformat = int(self.config["dateformat"])
         beginDate = datetime.datetime.strptime(visitbaselinedate, "%d/%m/%Y")
         if int(self.config["datemode"]) == 0:
             return beginDate
-        to_days = [0, 0, 1, 12, 365][visitdateformat]
         varname = list(self._variables.keys())[list(self._variables.values()).index(j)]
         if (self.config["datemode"]) == 1:
             defaulttimevar = self.config["timevar"]["default"]
@@ -256,6 +269,15 @@ class ETLdbGap:
                     timeval = int(self._data[i][self._variables[tv]])
                     addltime = max(addltime, timeval)
             timediff = max(timediff, addltime)
+            startdate = self.add_time(visitdateformat, beginDate, timediff)
+            return startdate.strftime("%Y-%m-%d")
+        elif (self.config["datemode"]) == 5:
+            datevar = self.config["timevar"]["default"]
+            timediff = 0
+            visitval = self._data[i][self._variables[datevar]]
+            match = re.search(r"\d+", visitval)
+            if match:
+                timediff = int(match.group())
             startdate = self.add_time(visitdateformat, beginDate, timediff)
             return startdate.strftime("%Y-%m-%d")
 
