@@ -3,6 +3,7 @@ separator: ','
 enumname:  'Label'
 typename: 'Type'
 varname: 'Variable'
+description: ''
 patientid: 'MaskID' 
 basedate: '1/1/2000'
 dateformat: 0 # visitdateformat
@@ -14,5 +15,5 @@ datevar: '' #diffdatevarname
 additionaldatediffvarname: 'NA'
 additionaldatedifftimeunits: '0'
 pathroot: 'dbGaP/ACCORD/Key' #pathrootname
-filebase: 'accord_key2'
+filebase: 'accord_key'
 ...
