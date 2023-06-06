@@ -59,16 +59,11 @@ class ETLdbGap:
                     trimmed_row = {}
                     for key, value in row.items():
                         trimmed_row[
-                            key
+                            key.strip()
                         ] = (
                             value.strip()
                         )  # Trimming leading/trailing whitespace
                     self._data_dictionary.append(trimmed_row)
-
-            # for row in reader:
-            # Skip empty lines
-            # if list(row.values())[0]:
-            #   self._data_dictionary.append(row)
 
     #
     # The AREDS2 dictionaries have enumerated values separated by commas;
