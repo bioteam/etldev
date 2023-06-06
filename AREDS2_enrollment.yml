@@ -7,8 +7,8 @@ varname: 'VARNAME'
 description: 'VARDESC'
 patientid: 'SUBJECT_ID' 
 basedate: '1/1/2000'
-dateformat: 2 # Already converted to days
-datemode: 0
-pathroot: 'dbGaP/AREDS2/Demographics' #pathrootname
-filebase: 'areds2_dem'
+dateformat: 0 
+datemode: 0 
+pathroot: 'dbGaP/AREDS2/Enrollment' #pathrootname
+filebase: 'areds2_enrollment'
 ...

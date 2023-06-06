@@ -138,8 +138,11 @@ class ETLdbGap:
             else:
                 values = re.split(self.config["separator"], enums)
 
-            if self.config["description"] != "" and enums["description"] != "":
-                description = enums["description"]
+            if (
+                self.config["description"] != ""
+                and row[self.config["description"]] != ""
+            ):
+                description = row[self.config["description"]]
                 path = "/".join(["", self.config["pathroot"], description, ""])
             else:
                 path = "/".join(["", self.config["pathroot"], varname, ""])

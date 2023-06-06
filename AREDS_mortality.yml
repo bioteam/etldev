@@ -11,5 +11,5 @@ datemode: 1  # Single timestamp for all facts
 timevar:
     default: 'DEATHTIME'
 pathroot: 'dbGaP/AREDS/Mortality' #pathrootname
-filebase: 'mortality'
+filebase: 'areds_mortality'
 ...

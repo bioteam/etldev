@@ -15,5 +15,5 @@ datevar: 'OBSTIME' #diffdatevarname
 additionaldatediffvarname: 'ADVTIME'
 additionaldatedifftimeunits: '2'
 pathroot: 'dbGaP/AREDS/Adverse Events' #pathrootname
-filebase: 'adverse'
+filebase: 'areds_adverse'
 ...

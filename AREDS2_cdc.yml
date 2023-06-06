@@ -13,5 +13,5 @@ timevar:
     default: 'ANALDATE'
 pathroot: 'dbGaP/AREDS2/CDC' #pathrootname
 datevar: 'ANALDATE' #diffdatevarname
-filebase: 'cdc'
+filebase: 'areds2_cdc'
 ...

@@ -12,5 +12,5 @@ timevar:
     REPHTIME: '\b(?:RE\w+|\w+RE)\b'
     LEPHTIME: '\b(?:LE\w+|\w+LE)\b'
 pathroot: 'dbGaP/AREDS/Fundus' #pathrootname
-filebase: 'fundus'
+filebase: 'areds_fundus'
 ...

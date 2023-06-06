@@ -16,5 +16,5 @@ timevar:
     AMDTRTLE: 'AMDTRTLETIME'
     FOLUPINT: 'FOLTIME'
 pathroot: 'dbGaP/AREDS/Followup' #pathrootname
-filebase: 'followup'
+filebase: 'areds_followup'
 ...

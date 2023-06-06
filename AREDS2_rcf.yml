@@ -15,5 +15,5 @@ timevar:
     PHOTPROC: 'PHOTDAF'
 additionaltimevar: ['GRDDATEF', 'ADJDATE', 'OVERDATF', 'REVDATEF']
 pathroot: 'dbGaP/AREDS2/RCF' #pathrootname
-filebase: 'rcf'
+filebase: 'areds2_rcf'
 ...
