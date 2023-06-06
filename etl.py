@@ -142,7 +142,7 @@ class ETLdbGap:
                 self.config["description"] != ""
                 and row[self.config["description"]] != ""
             ):
-                description = row[self.config["description"]]
+                description = row[self.config["description"]].replace("/"," or ")
                 path = "/".join(["", self.config["pathroot"], description, ""])
             else:
                 path = "/".join(["", self.config["pathroot"], varname, ""])

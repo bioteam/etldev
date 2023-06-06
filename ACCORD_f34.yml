@@ -9,7 +9,7 @@ basedate: '1/1/2000'
 dateformat: 3 # visitdateformat
 datemode: 5
 timevar:
-    default: 'visit'
+    default: 'Visit'
 datevar: 'visit' #diffdatevarname
 additionaldatediffvarname: 'NA'
 additionaldatedifftimeunits: '0'
