@@ -3,7 +3,7 @@ separator: ','
 enumname:  'Label'
 typename: 'Type'
 varname: 'Variable'
-description: ''
+description: 'Description'
 patientid: 'MaskID' 
 basedate: '1/1/2000'
 dateformat: 0 # visitdateformat
