@@ -1,0 +1,19 @@
+---
+dictformat: 'areds2'
+separator: ','
+enumname:  'VALUES'
+typename: 'TYPE'
+varname: 'VARNAME'
+description: ''
+patientid: 'SUBJECT_ID' 
+basedate: '1/1/2000'
+dateformat: 2 # Already converted to days
+datemode: 4
+timevar:
+    default: 'EXPODATE'
+    RETAKESF: 'PHOTDAF'
+    PHOTPROC: 'PHOTDAF'
+additionaltimevar: ['GRDDATEF', 'ADJDATE', 'OVERDATF', 'REVDATEF']
+pathroot: 'dbGaP/AREDS2/RCF' #pathrootname
+filebase: 'rcf'
+...

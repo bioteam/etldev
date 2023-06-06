@@ -4,13 +4,14 @@ separator: ','
 enumname:  'VALUES'
 typename: 'TYPE'
 varname: 'VARNAME'
+description: 'VARDESC'
 patientid: 'SUBJECT_ID' #patientid
 basedate: '1/1/2000'
 dateformat: 2 # Already converted to days
 datemode: 1 # Single date for all facts
 timevar:
     default: 'ANALDATE'
-pathroot: 'dbGaP/AREDS2/CDC Events' #pathrootname
+pathroot: 'dbGaP/AREDS2/CDC' #pathrootname
 datevar: 'ANALDATE' #diffdatevarname
 filebase: 'cdc'
 ...

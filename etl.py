@@ -54,12 +54,16 @@ class ETLdbGap:
             csvfile.seek(ptr)
             reader = csv.DictReader(csvfile)
             for row in reader:
-                trimmed_row = {}
-                for key, value in row.items():
-                    trimmed_row[
-                        key
-                    ] = value.strip()  # Trimming leading/trailing whitespace
-                self._data_dictionary.append(trimmed_row)
+                # Skip empty lines
+                if list(row.values())[0]:
+                    trimmed_row = {}
+                    for key, value in row.items():
+                        trimmed_row[
+                            key
+                        ] = (
+                            value.strip()
+                        )  # Trimming leading/trailing whitespace
+                    self._data_dictionary.append(trimmed_row)
 
             # for row in reader:
             # Skip empty lines
@@ -67,25 +71,52 @@ class ETLdbGap:
             #   self._data_dictionary.append(row)
 
     #
-    # The AREDS2 dictionaries have enumerated values separated by commas
+    # The AREDS2 dictionaries have enumerated values separated by commas;
+    # some values use = to separate codes, others do not.
     #
     def read_areds2_data_dictionary(self, dictfile):
-        with open(dictfile, "r", encoding="utf-8-sig") as csvfile:
-            ptr = csvfile.tell()
-            #
-            # Read headers explicitly and let DictReader make a list of
-            # the enumerated values
-            #
-            line = csvfile.readline()
-            names = line.split(sep=",")[:16]
+        if dictfile.endswith(".txt"):
+            with open(dictfile, "r", encoding="latin1") as csvfile:
+                #
+                # Read headers explicitly and let DictReader make a list of
+                # the enumerated values
+                #
+                line = csvfile.readline()
+                names = line.split(sep="\t")[:16]
+                reader = csv.DictReader(
+                    csvfile, delimiter="\t", fieldnames=names, restkey="VALUES"
+                )
+                for row in reader:
+                    # Skip empty lines
+                    if list(row.values())[0]:
+                        for key, value in row.items():
+                            if isinstance(value, list):
+                                # Replace smart quotes (AREDS_RCF)
+                                value = [
+                                    item.replace("\x93", "'") for item in value
+                                ]
+                                value = [
+                                    item.replace("\x94", "'") for item in value
+                                ]
 
-            reader = csv.DictReader(
-                csvfile, fieldnames=names, restkey="VALUES"
-            )
-            for row in reader:
-                # Skip empty lines
-                if list(row.values())[0]:
-                    self._data_dictionary.append(row)
+                                row[key] = value
+                        self._data_dictionary.append(row)
+        else:
+            with open(dictfile, "r", encoding="utf-8-sig") as csvfile:
+                #
+                # Read headers explicitly and let DictReader make a list of
+                # the enumerated values
+                #
+                line = csvfile.readline()
+                names = line.split(sep=",")[:16]
+
+                reader = csv.DictReader(
+                    csvfile, fieldnames=names, restkey="VALUES"
+                )
+                for row in reader:
+                    # Skip empty lines
+                    if list(row.values())[0]:
+                        self._data_dictionary.append(row)
 
     def write_concepts(self, conceptsfile):
         split_data = []
@@ -94,18 +125,21 @@ class ETLdbGap:
             if varname == self.config["patientid"]:
                 continue
             vartype = row[self.config["typename"]]
-            if type(row[self.config["enumname"]]) is list:
+            enums = row[self.config["enumname"]]
+            if type(enums) is list:
+                enums = [item for item in enums if item != ""]
                 if "encoded value" in vartype:
-                    values = list(filter(len, row[self.config["enumname"]]))
+                    values = list(filter(len, enums))
                 else:
-                    values = row[self.config["enumname"]][0]
+                    if len(enums) > 0:
+                        values = [enums[0]]
+                    else:
+                        values = []
             else:
-                values = re.split(
-                    self.config["separator"], row[self.config["enumname"]]
-                )
+                values = re.split(self.config["separator"], enums)
 
-            if self.config["description"] != "":
-                description = row[self.config["description"]]
+            if self.config["description"] != "" and enums["description"] != "":
+                description = enums["description"]
                 path = "/".join(["", self.config["pathroot"], description, ""])
             else:
                 path = "/".join(["", self.config["pathroot"], varname, ""])
@@ -310,6 +344,8 @@ class ETLdbGap:
                 # Should skip time variables
                 if self.config["datemode"] == 2:
                     skiplist = list(self.config["timevar"].keys())
+                elif self.config["datemode"] == 0:
+                    skiplist = []
                 else:
                     skiplist = list(self.config["timevar"].values())
                 for j, value in enumerate(self._data[i]):
@@ -393,10 +429,10 @@ def main():
     etl_conf = load_conf(inputs.config)
     etl = ETLdbGap(etl_conf)
     etl.read_data_dictionary(inputs.dictionary)
-    conceptsfile = "concepts_" + etl_conf["filebase"] + ".csv"
+    conceptsfile = etl_conf["filebase"] + "_concepts.csv"
     etl.write_concepts(conceptsfile)
     etl.read_facts(inputs.input)
-    factsfile = "facts_" + etl_conf["filebase"] + ".csv"
+    factsfile = etl_conf["filebase"] + "_facts.csv"
     etl.write_facts(factsfile)
 
 
