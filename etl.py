@@ -137,7 +137,9 @@ class ETLdbGap:
                 self.config["description"] != ""
                 and row[self.config["description"]] != ""
             ):
-                description = row[self.config["description"]].replace("/"," or ")
+                description = row[self.config["description"]].replace(
+                    "/", " or "
+                )
                 path = "/".join(["", self.config["pathroot"], description, ""])
             else:
                 path = "/".join(["", self.config["pathroot"], varname, ""])
@@ -229,9 +231,9 @@ class ETLdbGap:
         if visitdateformat == 2:  # days
             startdate = beginDate + datetime.timedelta(days=timediff)
         elif visitdateformat == 3:  # months
-            startdate = beginDate + relativedelta(
-                months=int(timediff)
-            )  # relativedelta does not support Non-integer years and months which are ambiguous and not currently supported.
+            # relativedelta does not support Non-integer years and months
+            # which are ambiguous and not currently supported.
+            startdate = beginDate + relativedelta(months=int(timediff))
         elif visitdateformat == 4:  # years
             startdate = beginDate + datetime.timedelta(days=timediff * 365)
         return startdate
@@ -245,7 +247,8 @@ class ETLdbGap:
     # Mode 2: facts are tied to certain time variables via regex
     # Mode 3: a list of possible additional time points, represented as deltas
     # Mode 4: a list of possible additional time points, relative to "basedate"
-    # Mode 5: time is defined by a visit variable that is parsable using a regex, e.g. F04, for 4 monrths visit
+    # Mode 5: time is defined by a visit variable that is parsable
+    # using a regex, e.g. F04, for 4 monrths visit
     def fact_time(self, i, j):
         visitbaselinedate = self.config["basedate"]
         visitdateformat = int(self.config["dateformat"])
