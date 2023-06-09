@@ -27,6 +27,21 @@ class ETLdbGap:
         self._map_phenotype_to_concept = []
         self._data = []
         self._variables = {}
+        self._icd_codes = {}  # All ICD codes and paths
+        self._icd_vars = []  # Code types in DD (ICD-9 and/or ICD-10)
+        self._used_icd_codes = []  # codes actually in use
+
+    def read_icd_codes(self, codefile):
+        with open(codefile) as csvfile:
+            reader = csv.reader(csvfile)
+            for row in reader:
+                key = row[-1]
+                val = ",".join(row[:-1])
+                self._icd_codes[key] = val
+        return len(self._icd_codes)
+
+    def icd_codes(self):
+        return len(self._icd_vars)
 
     def read_data_dictionary(self, dictfile):
         try:
@@ -63,6 +78,8 @@ class ETLdbGap:
                         ] = (
                             value.strip()
                         )  # Trimming leading/trailing whitespace
+                        if value.strip().startswith("ICD"):
+                            self._icd_vars.append(value.strip())
                     self._data_dictionary.append(trimmed_row)
 
     #
@@ -216,6 +233,22 @@ class ETLdbGap:
             writer.writerow(["path", "code", "type"])
             for row in split_data:
                 writer.writerow(row)
+
+    def write_icd_concepts(self, conceptsfile):
+        for varname in self._icd_vars:
+            i = self._data[0].index(varname)
+            with open(conceptsfile, "w", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["path", "code", "type"])
+                for key in self._used_icd_codes:
+                    try:
+                        path = "/".join(
+                            ["", self.config["pathroot"], self._icd_codes[key]]
+                        )
+                    except KeyError:
+                        continue
+                    writer.writerow([path, key, "string"])
+        return
 
     def read_facts(self, phenocsvfile):
         with open(phenocsvfile, "r", encoding="utf-8-sig") as f:
@@ -391,6 +424,13 @@ class ETLdbGap:
             writer = csv.writer(f)
             writer.writerow(["mrn", "start-date", "code", "value"])
             for row in facts:
+                row = list(row)
+                if row[2] in self._icd_vars:
+                    if row[2].startswith("ICD9"):
+                        row[2] = "ICD9:" + row[3]
+                    elif row[2].startswith("ICD10"):
+                        row[2] = "ICD10:" + row[3]
+                    self._used_icd_codes.append(row[2])
                 writer.writerow(row)
 
 
@@ -435,6 +475,10 @@ def main():
     etl.read_facts(inputs.input)
     factsfile = etl_conf["filebase"] + "_facts.csv"
     etl.write_facts(factsfile)
+    if etl.icd_codes():
+        if etl.read_icd_codes("i2b2_icd_codes.csv"):
+            conceptsfile = etl_conf["filebase"] + "_icd_concepts.csv"
+            etl.write_icd_concepts(conceptsfile)
 
 
 if __name__ == "__main__":
