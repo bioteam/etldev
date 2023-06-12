@@ -247,7 +247,7 @@ class ETLdbGap:
                         )
                     except KeyError:
                         continue
-                    writer.writerow([path, key, "string"])
+                    writer.writerow([path, key, "assertion"])
         return
 
     def read_facts(self, phenocsvfile):
@@ -427,9 +427,11 @@ class ETLdbGap:
                 row = list(row)
                 if row[2] in self._icd_vars:
                     if row[2].startswith("ICD9"):
-                        row[2] = "ICD9:" + row[3]
+                        row[2] = "dbGaP_ICD9:" + row[3]
+                        row[3] = ""
                     elif row[2].startswith("ICD10"):
-                        row[2] = "ICD10:" + row[3]
+                        row[2] = "dbGaP_ICD10:" + row[3]
+                        row[3] = ""
                     self._used_icd_codes.append(row[2])
                 writer.writerow(row)
 
