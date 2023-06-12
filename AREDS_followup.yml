@@ -3,7 +3,7 @@ separator: ';'
 enumname:  'CODE_MEANING'
 typename: 'TYPE'
 varname: 'VARNAME'
-description: ''
+description: 'VARDESC'
 patientid: 'ID2' #patientid
 basedate: '1/1/2000'
 dateformat: 4 # visitdateformat
