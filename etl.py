@@ -37,7 +37,7 @@ class ETLdbGap:
             for row in reader:
                 key = row[-1]
                 val = ",".join(row[:-1])
-                self._icd_codes[key] = val
+                self._icd_codes["dbGaP_"+key] = val
         return len(self._icd_codes)
 
     def icd_codes(self):
@@ -241,9 +241,10 @@ class ETLdbGap:
                 writer = csv.writer(f)
                 writer.writerow(["path", "code", "type"])
                 for key in self._used_icd_codes:
+                    base = re.sub('/[^/]+$', '', self.config["pathroot"])
                     try:
                         path = "/".join(
-                            ["", self.config["pathroot"], self._icd_codes[key]]
+                            ["", base, self._icd_codes[key]]
                         )
                     except KeyError:
                         continue
