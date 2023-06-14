@@ -243,9 +243,8 @@ class ETLdbGap:
                 for key in self._used_icd_codes:
                     base = re.sub('/[^/]+$', '', self.config["pathroot"])
                     try:
-                        path = "/".join(
-                            ["", base, self._icd_codes[key]]
-                        )
+                        path = "/" + base + self._icd_codes[key]
+                        path = re.sub(',\s?', ' - ',path)
                     except KeyError:
                         continue
                     writer.writerow([path, key, "assertion"])
