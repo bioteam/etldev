@@ -37,7 +37,7 @@ class ETLdbGap:
             for row in reader:
                 key = row[-1]
                 val = ",".join(row[:-1])
-                self._icd_codes["dbGaP_"+key] = val
+                self._icd_codes["dbGaP_" + key] = val
         return len(self._icd_codes)
 
     def icd_codes(self):
@@ -175,6 +175,7 @@ class ETLdbGap:
                 i2b2code = varname
                 dbgap_code_id = -1
                 conceptpath = path
+                conceptpath = re.sub(",\s?", " - ", conceptpath)
                 split_data.append((conceptpath, i2b2code, i2b2vartype))
                 self._map_phenotype_to_concept.append(
                     (
@@ -218,6 +219,7 @@ class ETLdbGap:
                     else:
                         i2b2code = varname4i2b2 + varcode
                     conceptpath = path + i2b2concept
+                    conceptpath = re.sub(",\s?", " - ", conceptpath)
                     split_data.append((conceptpath, i2b2code, "assertion"))
                     self._map_phenotype_to_concept.append(
                         (
@@ -241,10 +243,10 @@ class ETLdbGap:
                 writer = csv.writer(f)
                 writer.writerow(["path", "code", "type"])
                 for key in self._used_icd_codes:
-                    base = re.sub('/[^/]+$', '', self.config["pathroot"])
+                    base = re.sub("/[^/]+$", "", self.config["pathroot"])
                     try:
                         path = "/" + base + self._icd_codes[key]
-                        path = re.sub(',\s?', ' - ',path)
+                        path = re.sub(",\s?", " - ", path)
                     except KeyError:
                         continue
                     writer.writerow([path, key, "assertion"])
