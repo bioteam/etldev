@@ -315,7 +315,10 @@ class ETLdbGap:
             startdates = []
             for tv in self.config["timevar"]:
                 tvre = self.config["timevar"][tv]
-                timediff = float(self._data[i][self._variables[tv]])
+                if self._data[i][self._variables[tv]] == "":
+                    timediff = 0
+                else:
+                    timediff = float(self._data[i][self._variables[tv]])
                 startdate = self.add_time(visitdateformat, beginDate, timediff)
                 if re.search(tvre, self._data[0][j]):
                     return startdate.strftime("%Y-%m-%d")
