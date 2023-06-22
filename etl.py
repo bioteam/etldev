@@ -78,7 +78,7 @@ class ETLdbGap:
                         ] = (
                             value.strip()
                         )  # Trimming leading/trailing whitespace
-                        if value.strip().startswith("ICD"):
+                        if value.strip().startswith("ICD9"):
                             self._icd_vars.append(value.strip())
                     self._data_dictionary.append(trimmed_row)
 
