@@ -203,6 +203,7 @@ class ETLdbGap:
                         i2b2conceptlabel = "".join(
                             filter(str.isalnum, i2b2concept)
                         )
+
                     if (
                         i2b2conceptlabel == dbgap_code_id
                     ):  # TODO: Ensure i2b2code is unique in the ontology
@@ -212,6 +213,7 @@ class ETLdbGap:
                             "".join(filter(str.isalnum, i2b2concept))
                             + dbgap_code_id
                         )
+
                     varname4i2b2 = "".join(varname.split())
                     if (len(varname4i2b2) + len(varcode)) > 50:
                         truncate = 50 - len(varname4i2b2)
@@ -221,6 +223,7 @@ class ETLdbGap:
                     conceptpath = path + i2b2concept
                     conceptpath = re.sub(",\s?", " - ", conceptpath)
                     split_data.append((conceptpath, i2b2code, "assertion"))
+
                     self._map_phenotype_to_concept.append(
                         (
                             conceptpath,
@@ -324,7 +327,7 @@ class ETLdbGap:
                     return startdate.strftime("%Y-%m-%d")
                 startdates.append(startdate)
 
-            print(f"No matching time for: {self._data[0][j]!r}")
+            # print(f"No matching time for: {self._data[0][j]!r}")
             if len(startdates):
                 laststartdate = max(startdates)
                 return laststartdate.strftime("%Y-%m-%d")
