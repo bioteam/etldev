@@ -190,6 +190,7 @@ class ETLdbGap:
                 for i, value in enumerate(values):
                     value.replace('"', "")
                     # Limit the split to 1 as some descriptions contain "="
+
                     clin_name = value.split("=", 1)
                     # Remove spaces
                     clin_name = [x.strip(" ") for x in clin_name]
@@ -199,11 +200,49 @@ class ETLdbGap:
                     if len(clin_name) > 1:
                         dbgap_code_id = clin_name[0].replace('"', "").lstrip()
                         i2b2concept = clin_name[1].replace('"', "")
-                        i2b2concept = i2b2concept.replace(",", " or ")
+                        i2b2concept = i2b2concept.replace(",", "|")
+                        i2b2concept = i2b2concept.replace("/", "|")
                         i2b2conceptlabel = "".join(
                             filter(str.isalnum, i2b2concept)
                         )
+                    else:  # For mixed values, assuming comma-separated
+                        # encountered a value that is not an encoded value
+                        vartype = row[self.config["typename"]]
+                        multivar = vartype.split(",", 1)
+                        multivar = [x.strip(" ") for x in multivar]
+                        vartype = multivar[0].replace('"', "")
+                        if (
+                            vartype.lower() == "num"
+                            or vartype.lower() == "integer"
+                        ):
+                            i2b2vartype = "integer"
+                        elif (
+                            vartype.lower() == "decimal"
+                            or vartype.lower() == "float"
+                        ):
+                            i2b2vartype = "float"
+                        else:
+                            i2b2vartype = "string"
 
+                        i2b2code = varname
+                        dbgap_code_id = -1
+
+                        conceptpath = path
+                        conceptpath = (
+                            re.sub(",\s?", " - ", conceptpath) + "Value"
+                        )
+                        split_data.append((conceptpath, i2b2code, i2b2vartype))
+                        self._map_phenotype_to_concept.append(
+                            (
+                                conceptpath,
+                                i2b2code,
+                                i2b2vartype,
+                                dbgap_code_id,
+                                varname,
+                            )
+                        )
+                        continue
+                    # For encoded values
                     if (
                         i2b2conceptlabel == dbgap_code_id
                     ):  # TODO: Ensure i2b2code is unique in the ontology
@@ -292,7 +331,7 @@ class ETLdbGap:
         visitdateformat = int(self.config["dateformat"])
         beginDate = datetime.datetime.strptime(visitbaselinedate, "%d/%m/%Y")
         if int(self.config["datemode"]) == 0:
-            return beginDate
+            return beginDate.strftime("%Y-%m-%d")
         varname = list(self._variables.keys())[
             list(self._variables.values()).index(j)
         ]
