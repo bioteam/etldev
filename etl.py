@@ -295,9 +295,15 @@ class ETLdbGap:
         return
 
     def read_facts(self, phenocsvfile):
-        with open(phenocsvfile, "r", encoding="utf-8-sig") as f:
-            reader = csv.reader(f)
-            self._data = list(reader)
+        self._data = []
+        if phenocsvfile.endswith(".txt"):
+            with open(phenocsvfile, "r", encoding="latin1") as f:
+                reader = csv.reader(f, delimiter="\t")
+                self._data = list(reader)
+        else:
+            with open(phenocsvfile, "r", encoding="utf-8-sig") as f:
+                reader = csv.reader(f)
+                self._data = list(reader)
         i = 0
         while i < len(self._data[0]):
             self._variables[self._data[0][i]] = i
