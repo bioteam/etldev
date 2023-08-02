@@ -7,18 +7,7 @@ import datetime
 from datetime import timedelta
 from dateutil.relativedelta import relativedelta
 import csv
-
-
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-c", "--config", help="ETL config file")
-    parser.add_argument(
-        "-d", "--dictionary", help="file containing data dictionary"
-    )
-    parser.add_argument("-i", "--input", help="file data to be ETL'd")
-    args = parser.parse_args()
-    return args
-
+from random import sample
 
 class ETLdbGap:
     def __init__(self, config):
@@ -470,8 +459,12 @@ class ETLdbGap:
 
         return facts
 
-    def write_facts(self, factsfile):
+    def write_facts(self, factsfile, nsample=0):
         facts = self.collect_facts()
+
+        if nsample:
+            print("Sampling",nsample,"facts")
+            facts = sample(facts,int(nsample))
 
         with open(factsfile, "w", newline="") as f:
             writer = csv.writer(f)
@@ -500,6 +493,11 @@ def parse_args():
         "-d", "--dictionary", help="file containing data dictionary"
     )
     parser.add_argument("-i", "--input", help="file data to be ETL'd")
+    parser.add_argument(
+        "-n",
+        "--nsample",
+        help="Number of fact records to be sampled"
+    )
     args = parser.parse_args()
     return args
 
@@ -529,7 +527,7 @@ def main():
     etl.write_concepts(conceptsfile)
     etl.read_facts(inputs.input)
     factsfile = etl_conf["filebase"] + "_facts.csv"
-    etl.write_facts(factsfile)
+    etl.write_facts(factsfile,inputs.nsample)
     if etl.icd_codes():
         if etl.read_icd_codes("i2b2_icd_codes.csv"):
             conceptsfile = etl_conf["filebase"] + "_icd_concepts.csv"
