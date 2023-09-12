@@ -1,4 +1,5 @@
 ---
+dictformat: 'areds'
 separator: ';'
 enumname:  'CODE_MEANING'
 typename: 'TYPE'
@@ -7,7 +8,7 @@ description: 'VARDESC'
 patientid: 'ID2' #patientid
 basedate: '1/1/2000'
 dateformat: 4 
-datemode: 1  # Single timestamp for all facts
+datemode: 5  # decimal difference in years
 timevar:
     default: 'DEATHTIME'
 pathroot: 'dbGaP/AREDS/Mortality' #pathrootname
