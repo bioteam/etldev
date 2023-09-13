@@ -1,4 +1,5 @@
 ---
+dictformat: 'areds'
 separator: ';'
 enumname:  'CODE_MEANING'
 typename: 'TYPE'
@@ -10,4 +11,5 @@ dateformat: 0
 datemode: 0  # Single timestamp for all facts
 pathroot: 'dbGaP/AREDS/Enrollment Randomization' #pathrootname
 filebase: 'areds_enrollment'
+demographics_file: 'Dem-AREDS-Enrollment.csv'
 ...

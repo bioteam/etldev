@@ -1,4 +1,5 @@
 ---
+dictformat: 'areds'
 separator: ';'
 enumname:  'CODE_MEANING'
 typename: 'TYPE'
@@ -7,13 +8,9 @@ description: 'VARDESC'
 patientid: 'ID2' #patientid
 basedate: '1/1/2000'
 dateformat: 4 # visitdateformat
-datemode: 3
+datemode: 5
 timevar:
     default: 'OBSTIME'
-additionaltimevar: ['ADVTIME']
-datevar: 'OBSTIME' #diffdatevarname
-additionaldatediffvarname: 'ADVTIME'
-additionaldatedifftimeunits: '2'
-pathroot: 'dbGaP/AREDS/Adverse Events' #pathrootname
+pathroot: 'dbGaP/AREDS/Adverse Events' 
 filebase: 'areds_adverse'
 ...

@@ -11,4 +11,5 @@ dateformat: 2 # Already converted to days
 datemode: 0
 pathroot: 'dbGaP/AREDS2/Demographics' #pathrootname
 filebase: 'areds2_dem'
+demographics_file: 'Dem-AREDS2.csv'
 ...

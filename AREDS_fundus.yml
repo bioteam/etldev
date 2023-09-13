@@ -1,4 +1,5 @@
 ---
+dictformat: 'areds'
 separator: '(?<!DD);'
 enumname:  'CODE_MEANING'
 typename: 'TYPE'

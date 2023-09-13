@@ -7,11 +7,12 @@ varname: 'VARNAME'
 description: 'VARDESC'
 patientid: 'SUBJECT_ID' 
 basedate: '1/1/2000'
-dateformat: 0 
+dateformat: 2 # Already converted to days
 datemode: 6
 visitdatefile: 'AREDS2_VISNO_Dates.csv'
 timevar:
     default: 'VISNO'
-pathroot: 'dbGaP/AREDS2/RCF_RCA' #pathrootname
-filebase: 'areds2_rcf'
+pathroot: 'dbGaP/AREDS2/MED' #pathrootname
+filebase: 'areds2_med'
+codeprefix: 'TEST_'
 ...

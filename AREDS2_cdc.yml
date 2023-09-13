@@ -8,9 +8,10 @@ description: 'VARDESC'
 patientid: 'SUBJECT_ID' #patientid
 basedate: '1/1/2000'
 dateformat: 2 # Already converted to days
-datemode: 1 # Single date for all facts
+datemode: 6
+visitdatefile: 'AREDS2_VISNO_Dates.csv'
 timevar:
-    default: 'ANALDATE'
+    default: 'VISNO'
 pathroot: 'dbGaP/AREDS2/CDC' #pathrootname
 datevar: 'ANALDATE' #diffdatevarname
 filebase: 'areds2_cdc'

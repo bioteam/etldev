@@ -1,0 +1,30 @@
+path,code,dbgapi2b2code1,Demographic_field,Demographic_label,Demographic_code,dbgapi2b2code2,Another_field,Another_label,Another_code
+\Demographics\Gender\Male\,DEM|SEX:m,GENDERMale1,GENDER,Male,1,,,,
+\Demographics\Gender\Female\,DEM|SEX:f,GENDERFemale2,GENDER,Female,2,,,,
+\Demographics\Gender\Unknown\,DEM|SEX:u,,,,,,,,
+\Demographics\Race\Aleutian\Aleutian-ALEUTIAN\,DEM|RACE:aleutian,,,,,,,,
+\Demographics\Race\American Indian\American Indian-AMER. INDIAN\,DEM|RACE:amer. indian,RACEAmericanIndian4,RACE,American Indian,4,ETHNICNotHispanicorigin1,ETHNIC,Not Hispanic origin,1
+\Demographics\Race\American Indian\American Indian-AMER. INDIAN\,DEM|RACE:amer. indian,RACEAmericanIndian4,RACE,American Indian,4,ETHNICHispanicorigin2,ETHNIC,Hispanic origin,2
+\Demographics\Race\Asian Pacific Islander\Asian Pacific Islander-ASIAN PAC ISL\,DEM|RACE:asian pac. isl,RACENativeHawaiianorotherPacificislander6,RACE,Native Hawaiian or other Pacific islander,6,ETHNICNotHispanicorigin1,ETHNIC,Not Hispanic origin,1
+\Demographics\Race\Asian Pacific Islander\Asian Pacific Islander-ASIAN PAC ISL\,DEM|RACE:asian pac. isl,RACENativeHawaiianorotherPacificislander6,RACE,Native Hawaiian or other Pacific islander,6,ETHNICHispanicorigin2,ETHNIC,Hispanic origin,2
+\Demographics\Race\Asian\Asian-ASIAN\,DEM|RACE:asian,RACEAsian3,RACE,Asian,3,ETHNICNotHispanicorigin1,ETHNIC,Not Hispanic origin,1
+\Demographics\Race\Asian\Asian-ASIAN\,DEM|RACE:asian,RACEAsian3,RACE,Asian,3,ETHNICHispanicorigin2,ETHNIC,Hispanic origin,2
+\Demographics\Race\Black\Black-BLACK\,DEM|RACE:black,RACEBlackorAfricanAmerican2,RACE,Black or African American,2,ETHNICNotHispanicorigin1,ETHNIC,Not Hispanic origin,1
+\Demographics\Race\Black\Hispanic Black-HIS BLACK\,DEM|RACE:his black,RACEBlackorAfricanAmerican2,RACE,Black or African American,2,ETHNICHispanicorigin2,ETHNIC,Hispanic origin,2
+\Demographics\Race\Eskimo\Eskimo-ESKIMO\,DEM|RACE:eskimo,,,,,,,,
+\Demographics\Race\White\White-WHITE\,DEM|RACE:white,RACEWhite1,RACE,White,1,ETHNICNotHispanicorigin1,ETHNIC,Not Hispanic origin,1
+\Demographics\Race\Hispanic\Hispanic White-HIS WHITE\,DEM|RACE:his white,RACEWhite1,RACE,White,1,ETHNICHispanicorigin2,ETHNIC,Hispanic origin,2
+\Demographics\Race\Hispanic\Hispanic-HISPANIC\,DEM|RACE:hispanic,,,,,,,,
+\Demographics\Race\Indian\Indian-INDIAN\,DEM|RACE:indian,,,,,,,,
+\Demographics\Race\Middle Eastern\Middle Eastern-MID EASTERN\,DEM|RACE:mid.eastern,,,,,,,,
+\Demographics\Race\Multiracial\Multiracial-MULTI\,DEM|RACE:multi,,,,,,,,
+\Demographics\Race\Native American\Native American-NAT AM\,DEM|RACE:nat. am.,RACEAlaskannative5,RACE,Alaskan native,5,ETHNICNotHispanicorigin1,ETHNIC,Not Hispanic origin,1
+\Demographics\Race\Native American\Native American-NAT AM\,DEM|RACE:nat. am.,RACEAlaskannative5,RACE,Alaskan native,5,ETHNICHispanicorigin2,ETHNIC,Hispanic origin,2
+\Demographics\Race\Navajo\Navajo-NAVAJO\,DEM|RACE:navajo,,,,,,,,
+\Demographics\Race\Not Recorded\Not Recorded-@\,DEM|RACE:@,,,,,,,,
+\Demographics\Race\Not Recorded\Not Recorded-DEFERRED\,DEM|RACE:deferred,,,,,,,,
+\Demographics\Race\Not Recorded\Not Recorded-REFUSED\,DEM|RACE:refused,,,,,,,,
+\Demographics\Race\Not Recorded\Not Recorded-UNK\,DEM|RACE:unk,,,,,,,,
+\Demographics\Race\Oriental\Oriental-ORIENTAL\,DEM|RACE:oriental,,,,,,,,
+\Demographics\Race\Other\Other-OTHER\,DEM|RACE:other,RACEOther9,RACE,Other,9,ETHNICNotHispanicorigin1,ETHNIC,Not Hispanic origin,1
+\Demographics\Race\Hispanic\Hispanic-HISPANIC\,DEM|RACE:hispanic,RACEOther9,RACE,Other,9,ETHNICHispanicorigin2,ETHNIC,Hispanic origin,2

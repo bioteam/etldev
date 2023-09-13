@@ -1,4 +1,5 @@
 ---
+dictformat: 'areds'
 separator: ';'
 enumname:  'CODE_MEANING'
 typename: 'TYPE'
@@ -6,15 +7,10 @@ varname: 'VARNAME'
 description: 'VARDESC'
 patientid: 'ID2' #patientid
 basedate: '1/1/2000'
-dateformat: 4 # visitdateformat
-datemode: 1
+dateformat: 5 # visitdateformat
+datemode: 5
 timevar:
-    default: 'VISTIME'
-    CATSRGRE: 'CATRETIME'
-    CATSRGLE: 'CATLETIME'
-    AMDTRTRE: 'AMDTRTRETIME'
-    AMDTRTLE: 'AMDTRTLETIME'
-    FOLUPINT: 'FOLTIME'
+    default: 'VISNO'
 pathroot: 'dbGaP/AREDS/Followup' #pathrootname
 filebase: 'areds_followup'
 ...

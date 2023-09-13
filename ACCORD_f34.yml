@@ -7,12 +7,9 @@ description: 'Label'
 patientid: 'MaskID' #patientid
 basedate: '1/1/2000'
 dateformat: 3 # visitdateformat
-datemode: 5
+datemode: 7 # visit date is integer in years within string
 timevar:
-    default: 'Visit'
-datevar: 'visit' #diffdatevarname
-additionaldatediffvarname: 'NA'
-additionaldatedifftimeunits: '0'
+    default: 'visit'
 pathroot: 'dbGaP/ACCORD/f34' #pathrootname
 filebase: 'accord_f34_followup'
 ...

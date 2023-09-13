@@ -70,6 +70,38 @@ class ETLdbGap:
                         if value.strip().startswith("ICD9"):
                             self._icd_vars.append(value.strip())
                     self._data_dictionary.append(trimmed_row)
+ 
+    # For studies with visit numbers that map to a date
+    def read_visit_dates_file(self):
+        if self.config["datemode"] == 6:
+            try:
+                self.config["visitdatefile"]
+            except KeyError:
+                print(
+                    "Error: Datemode  is 6 and requires a filename for variable 'visitdatefile' containing visit dates that map to the input data!"
+                )
+            else:
+                file = self.config["visitdatefile"]
+                with open(file, "r", encoding="utf-8-sig") as file:
+                    reader = csv.reader(file)
+                    self._visitdatefile = list(reader)
+
+
+    # For studies with visit numbers that map to a date
+    def read_demographics_file(self):
+        if "demographics_file" in self.config:
+            try:
+                file = self.config["demographics_file"]
+                with open(file, "r", encoding="utf-8-sig") as file:
+                    reader = csv.reader(file)
+                    self._demographics_file = list(reader)
+          
+            except KeyError:
+                print(
+                    "Error: demographics_file cannot be opened!"
+                )
+
+
 
     #
     # The AREDS2 dictionaries have enumerated values separated by commas;
@@ -120,6 +152,10 @@ class ETLdbGap:
                         self._data_dictionary.append(row)
 
     def write_concepts(self, conceptsfile):
+        codeprefix=""
+        if "codeprefix" in self.config:
+            codeprefix = self.config["codeprefix"]                
+
         split_data = []
         for row in self._data_dictionary:
             varname = row[self.config["varname"]]
@@ -162,6 +198,8 @@ class ETLdbGap:
                     i2b2vartype = "string"
 
                 i2b2code = varname
+
+                i2b2code = codeprefix + i2b2code                
                 dbgap_code_id = -1
                 conceptpath = path
                 conceptpath = re.sub(",\s?", " - ", conceptpath)
@@ -175,7 +213,7 @@ class ETLdbGap:
                         varname,
                     )
                 )
-            else:
+            else: # enumerated or mixed values
                 for i, value in enumerate(values):
                     value.replace('"', "")
                     # Limit the split to 1 as some descriptions contain "="
@@ -214,6 +252,8 @@ class ETLdbGap:
                             i2b2vartype = "string"
 
                         i2b2code = varname
+                        i2b2code= codeprefix + i2b2code
+                        
                         dbgap_code_id = -1
 
                         conceptpath = path
@@ -231,7 +271,7 @@ class ETLdbGap:
                             )
                         )
                         continue
-                    # For encoded values
+                    # For encoded values proceed here
                     if (
                         i2b2conceptlabel == dbgap_code_id
                     ):  # TODO: Ensure i2b2code is unique in the ontology
@@ -242,7 +282,7 @@ class ETLdbGap:
                             + dbgap_code_id
                         )
 
-                    varname4i2b2 = "".join(varname.split())
+                    varname4i2b2 = codeprefix + "".join(varname.split())
                     if (len(varname4i2b2) + len(varcode)) > 50:
                         truncate = 50 - len(varname4i2b2)
                         i2b2code = varname4i2b2 + varcode[-truncate:]
@@ -265,7 +305,31 @@ class ETLdbGap:
             writer = csv.writer(f)
             writer.writerow(["path", "code", "type"])
             for row in split_data:
-                writer.writerow(row)
+                if "demographics_file" in self.config:
+                    # Are we using i2b2 demographic codes? If so, then skip
+                    #  row[]=(conceptpath, i2b2code, i2b2vartype)
+                    codeprefix=""
+                    if "codeprefix" in self.config:
+                        codeprefix = self.config["codeprefix"]  
+                    code = row[1] 
+                    skip = False
+                    for i, demrow in enumerate(self._demographics_file):
+                        if (demrow[3] != "" and code.startswith(codeprefix + demrow[3])) or (demrow[7] != "" and code.startswith(codeprefix + demrow[7])): # "Skip"
+                            skip = True
+                            break
+                                          
+                    if not skip:
+                        format = self.config["dictformat"]
+                        if format == "areds": # AREDS
+                            if code.startswith( codeprefix + "ENROLLAGE"):  # Age 
+                                skip = True
+                        elif format == "areds2": # AREDS 2
+                            if code.startswith( codeprefix + "AGE"):  # Age 
+                                skip = True
+                    if not skip :
+                        writer.writerow(row)
+                else:
+                    writer.writerow(row)
 
     def write_icd_concepts(self, conceptsfile):
         for varname in self._icd_vars:
@@ -274,9 +338,10 @@ class ETLdbGap:
                 writer = csv.writer(f)
                 writer.writerow(["path", "code", "type"])
                 for key in self._used_icd_codes:
-                    base = re.sub("/[^/]+$", "", self.config["pathroot"])
+                    # base = re.sub("/[^/]+$", "", self.config["pathroot"]) # Use when adding a path prefix oither than the standard one
                     try:
-                        path = "/" + base + self._icd_codes[key]
+                        # path = "/" + base + self._icd_codes[key]
+                        path = self._icd_codes[key]
                         path = re.sub(",\s?", " - ", path)
                     except KeyError:
                         continue
@@ -306,9 +371,46 @@ class ETLdbGap:
             # relativedelta does not support Non-integer years and months
             # which are ambiguous and not currently supported.
             startdate = beginDate + relativedelta(months=int(timediff))
-        elif visitdateformat == 4:  # years
+        elif visitdateformat == 4:  # years in Accord_f34
+            startdate = beginDate + datetime.timedelta(days=int(timediff * 365))
+        elif visitdateformat == 5:  # 0.5 years In Areds_followup
+            timediff=timediff * 0.5
             startdate = beginDate + datetime.timedelta(days=timediff * 365)
         return startdate
+
+    def add_demographics(self,  code, value, raceCodeAreds2):
+        i2b2demcode = ""
+        i2b2ethnicity=""
+        codeprefix = ""
+        if "codeprefix" in self.config:
+            codeprefix=self.config["codeprefix"]
+        # Go through demographics file and find the code
+        if "demographics_file" in self.config:
+
+            for i, row in enumerate(self._demographics_file):
+                if row[2] != "": # Found code
+                    dbgapi2b2code1 = codeprefix + row[2]
+                    if row[4] != "": # Must be Ethnicity
+                        i2b2ethnicity = codeprefix + row[6]
+                    if i2b2ethnicity == "" and code == dbgapi2b2code1 : # fond demographic code like gender or race without ethnicity
+                        i2b2demcode = codeprefix + row[1]
+                        break
+                    elif code == i2b2ethnicity: # found ethnicity connected to race
+                        if dbgapi2b2code1 == raceCodeAreds2:
+                            i2b2demcode = codeprefix + row[1]
+                            break
+
+        format = self.config["dictformat"]
+        if format == "areds": # AREDS
+            if code == codeprefix + "ENROLLAGE":  # Age 
+                value= round(float(value))
+                i2b2demcode = "DEM|AGE:" + str(value)
+        elif format == "areds2": #Areds 2
+            if code == codeprefix + "AGE":  # Age 
+                value= round(float(value))
+                i2b2demcode = "DEM|AGE:" + str(value)
+
+        return i2b2demcode
 
     #
     # Timestamps for individual facts.
@@ -339,6 +441,7 @@ class ETLdbGap:
                 timevar = defaulttimevar
             else:
                 timevar = self.config["timevar"][varname]
+
             if self._data[i][self._variables[timevar]].isalnum():
                 timediff = float(self._data[i][self._variables[timevar]])
             else:
@@ -400,6 +503,29 @@ class ETLdbGap:
             datevar = self.config["timevar"]["default"]
             timediff = 0
             visitval = self._data[i][self._variables[datevar]]
+            #match = re.search(r"\d+", visitval)
+            #if match:
+            #    timediff = int(match.group())
+            timediff = float (visitval)
+            startdate = self.add_time(visitdateformat, beginDate, timediff)
+            return startdate.strftime("%Y-%m-%d")
+        elif (self.config["datemode"]) == 6:
+            datevar = self.config["timevar"]["default"]
+            visitval = self._data[i][self._variables[datevar]]
+            visno_date = ""
+            for i, row in enumerate(self._visitdatefile):
+                if row[0] == visitval:
+                    visno_date = row[1]
+                    break
+            if visno_date == "":
+                print("Error: did not find visit number  in visit date file")
+            else:
+                beginDate = datetime.datetime.strptime(visno_date, "%m-%d-%Y")
+            return beginDate.strftime("%Y-%m-%d")
+        elif (self.config["datemode"]) == 7: # ACCORD_f34
+            datevar = self.config["timevar"]["default"]
+            timediff = 0
+            visitval = self._data[i][self._variables[datevar]]
             match = re.search(r"\d+", visitval)
             if match:
                 timediff = int(match.group())
@@ -411,6 +537,7 @@ class ETLdbGap:
         code = ""
         value = ""
         dt_string = ""
+        prevcode = ""
         for i in range(len(self._data)):
             if i > 0:
                 # Patient ID
@@ -420,10 +547,11 @@ class ETLdbGap:
                 # Should skip time variables
                 if self.config["datemode"] == 2:
                     skiplist = list(self.config["timevar"].keys())
-                elif self.config["datemode"] == 0:
-                    skiplist = []
+#                elif self.config["datemode"] == 0:
                 else:
-                    skiplist = list(self.config["timevar"].values())
+                    skiplist = []
+#                else:
+#                    skiplist = list(self.config["timevar"].values())
                 for j, value in enumerate(self._data[i]):
                     varname = list(self._variables.keys())[
                         list(self._variables.values()).index(j)
@@ -446,16 +574,34 @@ class ETLdbGap:
                                 self._map_phenotype_to_concept[x][3] == value
                                 and self._map_phenotype_to_concept[x][4]
                                 == self._data[0][j]
-                            ):
-                                code = self._map_phenotype_to_concept[x][1]
+                            ): # check dbgap_code_id and varname
+                                code = self._map_phenotype_to_concept[x][1] # get i2b2code
                                 value = ""
 
                         if code == "-":
-                            code = self._data[0][j]
-                            value = self._data[i][j]
+                            # Code may have been modified or abbreviated therefore lookup correct code
+                            # do not use self._data[0][j]
+                            for x in range(len(self._map_phenotype_to_concept)):
+                                # get string, integer, or float code with prefix if provided
+                                if (
+                                    self._map_phenotype_to_concept[x][4]
+                                    == self._data[0][j]
+                                ): # check varname
+                                    code = self._map_phenotype_to_concept[x][1] # get i2b2code
 
+                            value = self._data[i][j]
                         dt_string = self.fact_time(i, j)
-                        facts.append((mrn, str(dt_string), code, value))
+                        demcode = ""
+                        if "demographics_file" in self.config:
+                            demcode = self.add_demographics(code, value, prevcode)
+
+                        prevcode = code
+                        if demcode != "":
+                            code = demcode
+                            value = ""
+
+                        if code[0:4] != "RACE" or self.config["dictformat"] != "areds2": # Race & Ethnicity in separate columns needs a better solution
+                            facts.append((mrn, str(dt_string), code, value))
 
         return facts
 
@@ -523,6 +669,8 @@ def main():
     etl_conf = load_conf(inputs.config)
     etl = ETLdbGap(etl_conf)
     etl.read_data_dictionary(inputs.dictionary)
+    etl.read_visit_dates_file()
+    etl.read_demographics_file()
     conceptsfile = etl_conf["filebase"] + "_concepts.csv"
     etl.write_concepts(conceptsfile)
     etl.read_facts(inputs.input)
