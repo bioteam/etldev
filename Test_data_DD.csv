@@ -1,0 +1,10 @@
+VARNAME,VARDESC,TYPE,VALUES
+SUBJECT_ID,PARTICIPANT ID,string,
+MEDBETA,BETA BLOCKER MEDICATION,encoded value,1=No;2=Yes
+MEDANTIP,ANTI-PLATELET MEDICATIONS,encoded value,1=No;2=Yes
+AGE,AGE AT RANDOMIZATION,decimal,
+GENDER,GENDER,encoded value,1=Male;2=Female
+RACE,RACE,encoded value,1=White;2=Black or African American;3=Asian;4=American Indian;5=Alaskan native;6=Native Hawaiian or other Pacific islander;9=Other
+ETHNIC,ETHNICITY,encoded value,1=Not Hispanic origin;2=Hispanic origin
+MARITAL,MARITAL STATUS,encoded value,1=Married;2=Divorced;3=Widowed;4=Never married
+ICD9_DIAGNOSIS,PRIMARY ICD9 CODE,decimal,

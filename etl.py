@@ -41,7 +41,7 @@ class ETLdbGap:
             format = self.config["dictformat"]
         if format == "areds2":
             self.read_areds2_data_dictionary(dictfile)
-        else:
+        else: # areds, Test, other formats
             self.read_areds_data_dictionary(dictfile)
 
     #
@@ -70,6 +70,7 @@ class ETLdbGap:
                         if value.strip().startswith("ICD9"):
                             self._icd_vars.append(value.strip())
                     self._data_dictionary.append(trimmed_row)
+                    
  
     # For studies with visit numbers that map to a date
     def read_visit_dates_file(self):
@@ -133,6 +134,7 @@ class ETLdbGap:
                                 ]
 
                                 row[key] = value
+
                         self._data_dictionary.append(row)
         else:
             with open(dictfile, "r", encoding="utf-8-sig") as csvfile:
@@ -163,6 +165,7 @@ class ETLdbGap:
                 continue
             vartype = row[self.config["typename"]]
             enums = row[self.config["enumname"]]
+
             if type(enums) is list:
                 enums = [item for item in enums if item != ""]
                 if "encoded value" in vartype:
@@ -323,8 +326,8 @@ class ETLdbGap:
                         if format == "areds": # AREDS
                             if code.startswith( codeprefix + "ENROLLAGE"):  # Age 
                                 skip = True
-                        elif format == "areds2": # AREDS 2
-                            if code.startswith( codeprefix + "AGE"):  # Age 
+                        else: # AREDS 2, Test
+                            if code.startswith( codeprefix + "AGE") or code.startswith( codeprefix + "ICD9") :   
                                 skip = True
                     if not skip :
                         writer.writerow(row)
@@ -390,9 +393,11 @@ class ETLdbGap:
             for i, row in enumerate(self._demographics_file):
                 if row[2] != "": # Found code
                     dbgapi2b2code1 = codeprefix + row[2]
+
                     if row[4] != "": # Must be Ethnicity
                         i2b2ethnicity = codeprefix + row[6]
-                    if i2b2ethnicity == "" and code == dbgapi2b2code1 : # fond demographic code like gender or race without ethnicity
+    
+                    if i2b2ethnicity == "" and code == dbgapi2b2code1 : # found demographic code like gender or race without ethnicity
                         i2b2demcode = codeprefix + row[1]
                         break
                     elif code == i2b2ethnicity: # found ethnicity connected to race
@@ -402,11 +407,11 @@ class ETLdbGap:
 
         format = self.config["dictformat"]
         if format == "areds": # AREDS
-            if code == codeprefix + "ENROLLAGE":  # Age 
+            if code == codeprefix + "ENROLLAGE": 
                 value= round(float(value))
                 i2b2demcode = "DEM|AGE:" + str(value)
-        elif format == "areds2": #Areds 2
-            if code == codeprefix + "AGE":  # Age 
+        else: # Uses "AGE" as variable name
+            if code == codeprefix + "AGE":  
                 value= round(float(value))
                 i2b2demcode = "DEM|AGE:" + str(value)
 
@@ -421,8 +426,10 @@ class ETLdbGap:
     # Mode 2: facts are tied to certain time variables via regex
     # Mode 3: a list of possible additional time points, represented as deltas
     # Mode 4: a list of possible additional time points, relative to "basedate"
-    # Mode 5: time is defined by a visit variable that is parsable
+    # Mode 5: visit is calculated by a time difference as a decimal (parsable within a string). Example: AREDS_adverse.yml 
     # using a regex, e.g. F04, for 4 monrths visit
+    # Mode 6: Use Visno file. Example AREDS2_rcf.yml
+    # Mode 7:  visit is calculated by a time difference as a integer (parsable within a string). Example ACCORD_f34.yml
     def fact_time(self, i, j):
         visitbaselinedate = self.config["basedate"]
         visitdateformat = int(self.config["dateformat"])
@@ -432,7 +439,7 @@ class ETLdbGap:
         varname = list(self._variables.keys())[
             list(self._variables.values()).index(j)
         ]
-        if (self.config["datemode"]) == 1:
+        if (self.config["datemode"]) == 1: # Deprecated, see Mode = 5
             defaulttimevar = self.config["timevar"]["default"]
             # Is there a specific time variable for this variable?
             try:
@@ -499,14 +506,14 @@ class ETLdbGap:
             timediff = max(timediff, addltime)
             startdate = self.add_time(visitdateformat, beginDate, timediff)
             return startdate.strftime("%Y-%m-%d")
-        elif (self.config["datemode"]) == 5:
+        elif (self.config["datemode"]) == 5: # float time difference
             datevar = self.config["timevar"]["default"]
             timediff = 0
             visitval = self._data[i][self._variables[datevar]]
-            #match = re.search(r"\d+", visitval)
-            #if match:
-            #    timediff = int(match.group())
-            timediff = float (visitval)
+            match = re.search(r'^[+-]?((\d+(\.\d+)?)|(\.\d+))$', visitval)
+            if match:
+                timediff = float(match.group())
+            #timediff = float (visitval)
             startdate = self.add_time(visitdateformat, beginDate, timediff)
             return startdate.strftime("%Y-%m-%d")
         elif (self.config["datemode"]) == 6:
@@ -518,7 +525,7 @@ class ETLdbGap:
                     visno_date = row[1]
                     break
             if visno_date == "":
-                print("Error: did not find visit number  in visit date file")
+                print("Error: did not find visit number in visit date file")
             else:
                 beginDate = datetime.datetime.strptime(visno_date, "%m-%d-%Y")
             return beginDate.strftime("%Y-%m-%d")
@@ -600,7 +607,7 @@ class ETLdbGap:
                             code = demcode
                             value = ""
 
-                        if code[0:4] != "RACE" or self.config["dictformat"] != "areds2": # Race & Ethnicity in separate columns needs a better solution
+                        if code[0:4] != "RACE" or (self.config["dictformat"] != "areds2" and self.config["dictformat"] != "Test"): # Race & Ethnicity in separate columns needs a better solution
                             facts.append((mrn, str(dt_string), code, value))
 
         return facts
@@ -609,7 +616,6 @@ class ETLdbGap:
         facts = self.collect_facts()
 
         if nsample:
-            print("Sampling",nsample,"facts")
             facts = sample(facts,int(nsample))
 
         with open(factsfile, "w", newline="") as f:
