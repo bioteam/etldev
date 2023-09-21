@@ -1,0 +1,16 @@
+---
+dictformat: 'Test'
+separator: ';'
+enumname:  'VALUES'
+typename: 'TYPE'
+varname: 'VARNAME'
+description: 'VARDESC'
+patientid: 'SUBJECT_ID' 
+basedate: '1/1/2000'
+dateformat: 2 # Already converted to days
+datemode: 0
+pathroot: 'dbGaP/Test/Mix' #pathrootname
+filebase: 'test'
+demographics_file: 'Dem-AREDS2.csv'
+codeprefix: 'TEST_'
+...
