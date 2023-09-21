@@ -72,9 +72,7 @@ class ETLdbGap:
                             value.strip()
                         )  # Trimming leading/trailing whitespace
                         if value.strip().startswith("ICD9"):
-                            self._icd_vars.append(
-                                self.codeprefix + value.strip()
-                            )
+                            self._icd_vars.append(value.strip())
                     self._data_dictionary.append(trimmed_row)
 
     # For studies with visit numbers that map to a date
@@ -198,7 +196,6 @@ class ETLdbGap:
 
                 i2b2code = varname
 
-                i2b2code = self.codeprefix + i2b2code
                 dbgap_code_id = -1
                 conceptpath = path
                 conceptpath = re.sub(",\s?", " - ", conceptpath)
@@ -251,7 +248,6 @@ class ETLdbGap:
                             i2b2vartype = "string"
 
                         i2b2code = varname
-                        i2b2code = self.codeprefix + i2b2code
 
                         dbgap_code_id = -1
 
@@ -281,7 +277,7 @@ class ETLdbGap:
                             + dbgap_code_id
                         )
 
-                    varname4i2b2 = self.codeprefix + "".join(varname.split())
+                    varname4i2b2 = "".join(varname.split())
                     if (len(varname4i2b2) + len(varcode)) > 50:
                         truncate = 50 - len(varname4i2b2)
                         i2b2code = varname4i2b2 + varcode[-truncate:]
@@ -304,18 +300,16 @@ class ETLdbGap:
             writer = csv.writer(f)
             writer.writerow(["path", "code", "type"])
             for row in split_data:
+                skip = False
                 if "demographics_file" in self.config:
                     # Are we using i2b2 demographic codes? If so, then skip
                     #  row[]=(conceptpath, i2b2code, i2b2vartype)
                     code = row[1]
-                    skip = False
                     for i, demrow in enumerate(self._demographics_file):
                         if (
-                            demrow[3] != ""
-                            and code.startswith(self.codeprefix + demrow[3])
+                            demrow[3] != "" and code.startswith(demrow[3])
                         ) or (
-                            demrow[7] != ""
-                            and code.startswith(self.codeprefix + demrow[7])
+                            demrow[7] != "" and code.startswith(demrow[7])
                         ):  # "Skip"
                             skip = True
                             break
@@ -323,19 +317,18 @@ class ETLdbGap:
                     if not skip:
                         format = self.config["dictformat"]
                         if format == "areds":  # AREDS
-                            if code.startswith(
-                                self.codeprefix + "ENROLLAGE"
-                            ):  # Age
+                            if code.startswith("ENROLLAGE"):  # Age
                                 skip = True
                         else:  # AREDS 2, Test
-                            if code.startswith(
-                                self.codeprefix + "AGE"
-                            ) or code.startswith(self.codeprefix + "ICD9"):
+                            if code.startswith("AGE") or code.startswith(
+                                "ICD9"
+                            ):
                                 skip = True
-                    if not skip:
-                        writer.writerow(row)
-                else:
-                    writer.writerow(row)
+
+                if not skip:
+                    listconcepts = list(row)
+                    listconcepts[1] = self.codeprefix + listconcepts[1]
+                    writer.writerow(listconcepts)
 
     def write_icd_concepts(self, conceptsfile):
         for varname in self._icd_vars:
@@ -394,32 +387,35 @@ class ETLdbGap:
 
         # Go through demographics file and find the code
         if "demographics_file" in self.config:
-            for i, row in enumerate(self._demographics_file):
-                if row[2] != "":  # Found code
-                    dbgapi2b2code1 = self.codeprefix + row[2]
-
-                    if row[4] != "":  # Must be Ethnicity
-                        i2b2ethnicity = self.codeprefix + row[6]
-
-                    if (
-                        i2b2ethnicity == "" and code == dbgapi2b2code1
-                    ):  # found demographic code like gender or race without ethnicity
-                        i2b2demcode = self.codeprefix + row[1]
-                        break
-                    elif (
-                        code == i2b2ethnicity
-                    ):  # found ethnicity connected to race
-                        if dbgapi2b2code1 == raceCodeAreds2:
-                            i2b2demcode = self.codeprefix + row[1]
-                            break
+            if code.startswith(
+                "ETHNIC"
+            ):  # Areds2 has ethnicty and race separate
+                matching_rows = [
+                    row
+                    for row in self._demographics_file
+                    if row[2] == raceCodeAreds2
+                ]
+                for row in matching_rows:
+                    i2b2ethnicity = row[6]  # get i2b2 ethnicity
+                    if i2b2ethnicity == code:
+                        i2b2demcode = row[1]
+            else:
+                matching_row = next(
+                    (row for row in self._demographics_file if row[2] == code),
+                    None,
+                )
+                if (
+                    matching_row is not None and matching_row[6] == ""
+                ):  # column 6 is ethnicity and should be empty except for race
+                    i2b2demcode = matching_row[1]  # get i2b2 DEM code
 
         format = self.config["dictformat"]
         if format == "areds":  # AREDS
-            if code == self.codeprefix + "ENROLLAGE":
+            if code == "ENROLLAGE":
                 value = round(float(value))
                 i2b2demcode = "DEM|AGE:" + str(value)
         else:  # Uses "AGE" as variable name
-            if code == self.codeprefix + "AGE":
+            if code == "AGE":
                 value = round(float(value))
                 i2b2demcode = "DEM|AGE:" + str(value)
 
@@ -645,14 +641,21 @@ class ETLdbGap:
                 row = list(row)
 
                 if row[2] in self._icd_vars:
-                    if row[2].startswith(self.codeprefix + "ICD9"):
+                    if row[2].startswith("ICD9"):
                         row[2] = "dbGaP_ICD9:" + row[3]
                         row[3] = ""
-                    elif row[2].startswith(self.codeprefix + "ICD10"):
+                    elif row[2].startswith("ICD10"):
                         row[2] = "dbGaP_ICD10:" + row[3]
                         row[3] = ""
                     self._used_icd_codes.append(row[2])
-                writer.writerow(row)
+                if not row[2].startswith("DEM|") and not row[2].startswith(
+                    "dbGaP"
+                ):
+                    listconcepts = list(row)
+                    listconcepts[2] = self.codeprefix + listconcepts[2]
+                    writer.writerow(listconcepts)
+                else:
+                    writer.writerow(row)
 
 
 #
